@@ -8,13 +8,17 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
+    "setup:db": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-database.ps1",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:verify": "tsx prisma/verify-setup.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "dotenv": "^17.2.3",
     "next": "16.0.3",
     "react": "19.2.0",
     "react-dom": "19.2.0"
@@ -33,6 +37,7 @@
     "prettier": "^3.6.2",
     "prisma": "^6.19.0",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

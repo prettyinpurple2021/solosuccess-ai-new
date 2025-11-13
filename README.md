@@ -1,24 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SoloSuccess AI
 
-## Getting Started
+An AI-powered platform that provides solo founders with a virtual executive team of specialized AI agents.
 
-First, run the development server:
+## Quick Start
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Set Up Database
+
+**Option A: Automated Setup (Recommended)**
+```bash
+npm run setup:db
+```
+
+**Option B: Manual Setup**
+1. Copy `.env.example` to `.env`
+2. Update `DATABASE_URL` with your PostgreSQL connection
+3. Run migrations: `npm run prisma:migrate`
+4. Verify setup: `npm run prisma:verify`
+
+For detailed database setup instructions, see [DATABASE_SETUP.md](./DATABASE_SETUP.md)
+
+### 3. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+solosuccess-ai/
+├── app/                    # Next.js app directory
+├── prisma/                 # Database schema and migrations
+│   ├── schema.prisma      # Database models
+│   ├── seed.ts            # Database seeding
+│   └── README.md          # Database documentation
+├── lib/                    # Shared utilities and helpers
+├── components/             # React components
+├── public/                 # Static assets
+└── scripts/                # Setup and utility scripts
+```
+
+## Available Scripts
+
+### Development
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
+
+### Database
+- `npm run setup:db` - Automated database setup
+- `npm run prisma:generate` - Generate Prisma Client
+- `npm run prisma:migrate` - Run database migrations
+- `npm run prisma:studio` - Open Prisma Studio (database GUI)
+- `npm run prisma:seed` - Seed database with initial data
+- `npm run prisma:verify` - Verify database setup
+
+## Tech Stack
+
+- **Framework**: Next.js 14 with App Router
+- **Language**: TypeScript
+- **Database**: PostgreSQL with Prisma ORM
+- **Styling**: Tailwind CSS
+- **AI**: OpenAI GPT-4 / Anthropic Claude
+
+## Documentation
+
+- [Database Setup Guide](./DATABASE_SETUP.md) - Quick start for database configuration
+- [Database Schema Documentation](./prisma/README.md) - Detailed schema information
+- [Migration Summary](./MIGRATION_SUMMARY.md) - Overview of database implementation
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/solosuccess?schema=public"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key"
+OPENAI_API_KEY="your-openai-key"
+```
 
 ## Learn More
 

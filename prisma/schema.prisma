@@ -5,11 +5,213 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Users and Authentication
+// ============================================
+
+model User {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  passwordHash       String?
+  emailVerified      Boolean   @default(false)
+  subscriptionTier   String    @default("free")
+  subscriptionStatus String    @default("active")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  profile                UserProfile?
+  conversations          Conversation[]
+  businessPlans          BusinessPlan[]
+  goals                  Goal[]
+  subscriptions          Subscription[]
+  missionControlSessions MissionControlSession[]
+  generatedContent       GeneratedContent[]
+  competitorProfiles     CompetitorProfile[]
+
+  @@index([email])
+}
+
+model UserProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName           String?
+  lastName            String?
+  avatarUrl           String?
+  businessName        String?
+  businessType        String?
+  industry            String?
+  companySize         String?
+  goals               Json?
+  preferences         Json?
+  onboardingCompleted Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================
+// AI Conversations and Content
+// ============================================
+
+model Conversation {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agentId       String
+  title         String?
+  messages      Json
+  metadata      Json?
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, agentId])
+  @@index([lastMessageAt])
+}
+
+model MissionControlSession {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  objective      String
+  status         String    @default("in_progress")
+  agentsInvolved String[]
+  context        Json
+  results        Json?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId, status])
+}
+
+model GeneratedContent {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentType String
+  title       String?
+  content     String
+  metadata    Json?
+  status      String   @default("draft")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, contentType])
+}
+
+// ============================================
+// Business Plans and Goals
+// ============================================
+
+model BusinessPlan {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  content     Json
+  status      String   @default("draft")
+  version     Int      @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  goals Goal[]
+
+  @@index([userId, status])
+}
+
+model Goal {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessPlanId String?
+  businessPlan   BusinessPlan? @relation(fields: [businessPlanId], references: [id], onDelete: SetNull)
+  title          String
+  description    String?
+  category       String?
+  targetValue    Decimal?
+  currentValue   Decimal       @default(0)
+  unit           String?
+  targetDate     DateTime?
+  status         String        @default("active")
+  priority       Int           @default(1)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([userId, status])
+}
+
+// ============================================
+// Competitor Intelligence
+// ============================================
+
+model CompetitorProfile {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  website         String?
+  industry        String?
+  description     String?
+  trackingSources Json
+  metadata        Json?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  activities CompetitorActivity[]
+
+  @@index([userId, isActive])
+}
+
+model CompetitorActivity {
+  id           String            @id @default(uuid())
+  competitorId String
+  competitor   CompetitorProfile @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  activityType String
+  title        String
+  description  String?
+  sourceUrl    String?
+  detectedAt   DateTime
+  importance   String            @default("medium")
+  metadata     Json?
+  createdAt    DateTime          @default(now())
+
+  @@index([competitorId, detectedAt])
+}
+
+// ============================================
+// Subscriptions and Billing
+// ============================================
+
+model Subscription {
+  id                   String    @id @default(uuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  stripeCustomerId     String?
+  planName             String
+  status               String
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([stripeSubscriptionId])
 }
