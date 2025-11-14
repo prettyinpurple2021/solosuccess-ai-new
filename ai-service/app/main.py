@@ -43,10 +43,24 @@ async def lifespan(app: FastAPI):
         )
         logger.info("sentry_initialized")
     
+    # Initialize Redis connection for context storage
+    from app.services.context_storage import context_storage
+    await context_storage.connect()
+    logger.info("context_storage_connected")
+    
+    # Initialize AI agents
+    from app.agents import initialize_agents
+    initialize_agents()
+    logger.info("agents_initialized")
+    
     yield
     
     # Shutdown
     logger.info("application_shutting_down")
+    
+    # Cleanup Redis connection
+    await context_storage.disconnect()
+    logger.info("context_storage_disconnected")
 
 
 # Create FastAPI application

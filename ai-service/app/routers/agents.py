@@ -13,14 +13,11 @@ from app.models.agent_models import (
     AgentMetadata
 )
 from app.agents.agent_registry import agent_registry
-from app.agents.base_agent import ConversationContext
+from app.services.context_storage import context_storage
 
 logger = structlog.get_logger()
 
 router = APIRouter()
-
-# In-memory context storage (in production, use Redis or database)
-_contexts: dict = {}
 
 
 @router.get(
@@ -75,12 +72,18 @@ async def process_message(request: AgentProcessRequest):
                 detail=f"Agent '{request.agent_id}' not found"
             )
         
-        # Get or create context
-        context_key = f"{request.agent_id}:{request.context_id or 'default'}"
-        if context_key not in _contexts:
-            _contexts[context_key] = agent.create_context(max_history=request.max_history)
+        # Load or create context from Redis
+        context_id = request.context_id or "default"
+        context = await context_storage.load_context(request.agent_id, context_id)
         
-        context = _contexts[context_key]
+        if not context:
+            # Create new context if not found
+            context = agent.create_context(max_history=request.max_history)
+            logger.info(
+                "new_context_created",
+                agent_id=request.agent_id,
+                context_id=context_id
+            )
         
         # Process message
         kwargs = {}
@@ -91,6 +94,13 @@ async def process_message(request: AgentProcessRequest):
             message=request.message,
             context=context,
             **kwargs
+        )
+        
+        # Save updated context to Redis
+        await context_storage.save_context(
+            request.agent_id,
+            context_id,
+            context
         )
         
         # Convert to response model
@@ -126,15 +136,30 @@ async def process_message(request: AgentProcessRequest):
     description="Clear the conversation context for an agent"
 )
 async def clear_context(agent_id: str, context_id: str = "default"):
-    """Clear conversation context"""
-    context_key = f"{agent_id}:{context_id}"
-    
-    if context_key in _contexts:
-        del _contexts[context_key]
-        logger.info(
-            "context_cleared",
-            agent_id=agent_id,
-            context_id=context_id
-        )
-    
+    """Clear conversation context from Redis"""
+    await context_storage.delete_context(agent_id, context_id)
     return None
+
+
+@router.get(
+    "/contexts",
+    status_code=status.HTTP_200_OK,
+    summary="List all contexts",
+    description="List all conversation contexts, optionally filtered by agent"
+)
+async def list_contexts(agent_id: str = None):
+    """List all conversation contexts"""
+    contexts = await context_storage.list_contexts(agent_id)
+    return {"contexts": contexts, "count": len(contexts)}
+
+
+@router.delete(
+    "/contexts",
+    status_code=status.HTTP_200_OK,
+    summary="Clear all contexts",
+    description="Clear all conversation contexts, optionally filtered by agent"
+)
+async def clear_all_contexts(agent_id: str = None):
+    """Clear all conversation contexts"""
+    deleted = await context_storage.clear_all_contexts(agent_id)
+    return {"deleted": deleted}

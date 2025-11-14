@@ -17,7 +17,7 @@ pinecone-client==3.0.2
 python-dotenv==1.0.0
 httpx==0.26.0
 tenacity==8.2.3
-redis==5.0.1
+redis[hiredis]==5.0.1  # Async Redis with performance optimizations
 
 # Monitoring and logging
 structlog==24.1.0
