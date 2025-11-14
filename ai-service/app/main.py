@@ -91,9 +91,11 @@ app.include_router(health.router, prefix="/api", tags=["health"])
 
 # Import and include other routers
 from app.routers import llm, vectors, agents
+from app.routes import mission_control
 app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
 app.include_router(vectors.router, prefix="/api/vectors", tags=["vectors"])
 app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
+app.include_router(mission_control.router, tags=["mission-control"])
 
 
 @app.get("/")

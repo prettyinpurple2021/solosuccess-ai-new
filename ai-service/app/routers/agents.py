@@ -163,3 +163,29 @@ async def clear_all_contexts(agent_id: str = None):
     """Clear all conversation contexts"""
     deleted = await context_storage.clear_all_contexts(agent_id)
     return {"deleted": deleted}
+
+
+@router.post(
+    "/{agent_id}/contribute",
+    status_code=status.HTTP_200_OK,
+    summary="Get agent contribution for Mission Control",
+    description="Get an agent's expert contribution to a Mission Control objective"
+)
+async def get_agent_contribution(agent_id: str, request: dict):
+    """Get agent contribution for Mission Control"""
+    from app.services.mission_control_service import get_agent_contribution
+    
+    try:
+        contribution = await get_agent_contribution(
+            agent_id=agent_id,
+            objective=request.get("objective", ""),
+            context=request.get("context", {}),
+            analysis=request.get("analysis", {})
+        )
+        return contribution
+    except Exception as e:
+        logger.error("agent_contribution_failed", agent_id=agent_id, error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get contribution from {agent_id}"
+        )
