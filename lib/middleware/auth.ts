@@ -190,3 +190,60 @@ export function withSubscription(minTier: 'free' | 'accelerator' | 'premium') {
     return handler(request);
   };
 }
+
+/**
+ * Verify authentication and return user info
+ * Utility function for route handlers
+ */
+export async function verifyAuth(request: NextRequest): Promise<{
+  authenticated: boolean;
+  user?: {
+    userId: string;
+    email: string;
+    subscriptionTier: string;
+  };
+}> {
+  try {
+    // Get token from cookie or Authorization header
+    const token =
+      request.cookies.get('accessToken')?.value ||
+      request.headers.get('authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      return { authenticated: false };
+    }
+
+    // Verify token
+    const payload = verifyAccessToken(token);
+    if (!payload) {
+      return { authenticated: false };
+    }
+
+    // Verify user still exists and is active
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: {
+        id: true,
+        email: true,
+        subscriptionTier: true,
+        deletedAt: true,
+      },
+    });
+
+    if (!user || user.deletedAt) {
+      return { authenticated: false };
+    }
+
+    return {
+      authenticated: true,
+      user: {
+        userId: user.id,
+        email: user.email,
+        subscriptionTier: user.subscriptionTier,
+      },
+    };
+  } catch (error) {
+    console.error('Auth verification error:', error);
+    return { authenticated: false };
+  }
+}

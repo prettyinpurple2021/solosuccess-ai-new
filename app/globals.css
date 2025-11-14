@@ -1,17 +1,36 @@
 @import "tailwindcss";
 
 :root {
+  /* Light mode colors */
   --background: #ffffff;
   --foreground: #171717;
   
-  /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.2);
+  /* Glassmorphism - Light */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.1);
   
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  
+  /* Card backgrounds */
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-border: rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+  /* Dark mode colors */
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  
+  /* Glassmorphism - Dark */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  
+  /* Card backgrounds */
+  --card-bg: rgba(0, 0, 0, 0.3);
+  --card-border: rgba(255, 255, 255, 0.1);
 }
 
 @theme inline {
@@ -23,15 +42,8 @@
   /* Custom colors for glassmorphism */
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --glass-bg: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.1);
-  }
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
 }
 
 body {
