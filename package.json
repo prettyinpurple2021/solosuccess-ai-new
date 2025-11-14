@@ -31,6 +31,7 @@
     "next": "16.0.3",
     "next-auth": "^4.24.13",
     "nodemailer": "^7.0.10",
+    "openai": "^6.9.0",
     "playwright": "^1.56.1",
     "qrcode": "^1.5.4",
     "react": "19.2.0",

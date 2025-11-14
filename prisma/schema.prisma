@@ -230,3 +230,72 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+model PreMortemSimulation {
+  id              String                @id @default(uuid())
+  userId          String
+  initiativeTitle String
+  description     String?
+  context         Json
+  parameters      Json
+  status          String                @default("in_progress")
+  completedAt     DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  scenarios       FailureScenario[]
+  report          PreMortemReport?
+
+  @@index([userId, status])
+}
+
+model FailureScenario {
+  id                  String               @id @default(uuid())
+  simulationId        String
+  title               String
+  description         String
+  category            String
+  likelihood          Int
+  impact              Int
+  riskScore           Int
+  detailedAnalysis    String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  simulation          PreMortemSimulation  @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  mitigationStrategies MitigationStrategy[]
+
+  @@index([simulationId, riskScore])
+}
+
+model MitigationStrategy {
+  id                   String          @id @default(uuid())
+  scenarioId           String
+  title                String
+  description          String
+  priority             String
+  estimatedCost        String?
+  estimatedTime        String?
+  resourceRequirements Json?
+  effectiveness        Int?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  scenario             FailureScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@index([scenarioId, priority])
+}
+
+model PreMortemReport {
+  id                      String              @id @default(uuid())
+  simulationId            String              @unique
+  executiveSummary        String
+  riskMatrix              Json
+  topRisks                Json
+  mitigationPlan          Json
+  contingencyPlans        Json
+  recommendations         Json
+  pdfUrl                  String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  simulation              PreMortemSimulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+
+  @@index([simulationId])
+}
