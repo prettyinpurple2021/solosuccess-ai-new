@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { promptId: string } }
+  { params }: { params: Promise<{ promptId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,6 +14,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { promptId } = await params;
     const body = await request.json();
     const { response } = body;
 
@@ -26,7 +27,7 @@ export async function POST(
 
     // Verify prompt belongs to user's assessment
     const prompt = await prisma.shadowSelfCoachingPrompt.findUnique({
-      where: { id: params.promptId },
+      where: { id: promptId },
       include: {
         assessment: true,
       },
@@ -49,7 +50,7 @@ export async function POST(
 
     // Complete the prompt
     const completedPrompt = await CoachingPromptService.completePrompt(
-      params.promptId,
+      promptId,
       response
     );
 

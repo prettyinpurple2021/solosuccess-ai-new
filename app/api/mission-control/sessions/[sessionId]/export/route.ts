@@ -7,9 +7,10 @@ import { format } from 'date-fns';
 // GET /api/mission-control/sessions/[sessionId]/export - Export session as PDF/JSON
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    const { sessionId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {

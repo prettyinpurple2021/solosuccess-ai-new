@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { reassessmentId: string } }
+  { params }: { params: Promise<{ reassessmentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,9 +13,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { reassessmentId } = await params;
     const reassessment = await prisma.shadowSelfReassessment.findFirst({
       where: {
-        id: params.reassessmentId,
+        id: reassessmentId,
         userId: session.user.id,
       },
     });

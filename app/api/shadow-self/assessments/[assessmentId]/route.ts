@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,9 +13,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { assessmentId } = await params;
     const assessment = await prisma.shadowSelfAssessment.findFirst({
       where: {
-        id: params.assessmentId,
+        id: assessmentId,
         userId: session.user.id,
       },
       include: {
@@ -39,7 +40,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -47,12 +48,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { assessmentId } = await params;
     const body = await request.json();
     const { responses, currentStep } = body;
 
     const assessment = await prisma.shadowSelfAssessment.findFirst({
       where: {
-        id: params.assessmentId,
+        id: assessmentId,
         userId: session.user.id,
       },
     });
@@ -70,7 +72,7 @@ export async function PATCH(
 
     const updatedAssessment = await prisma.shadowSelfAssessment.update({
       where: {
-        id: params.assessmentId,
+        id: assessmentId,
       },
       data: {
         responses,
@@ -91,7 +93,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -99,9 +101,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { assessmentId } = await params;
     const assessment = await prisma.shadowSelfAssessment.findFirst({
       where: {
-        id: params.assessmentId,
+        id: assessmentId,
         userId: session.user.id,
       },
     });
@@ -112,7 +115,7 @@ export async function DELETE(
 
     await prisma.shadowSelfAssessment.delete({
       where: {
-        id: params.assessmentId,
+        id: assessmentId,
       },
     });
 

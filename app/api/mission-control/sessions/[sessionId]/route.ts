@@ -6,9 +6,10 @@ import { prisma } from '@/lib/prisma';
 // GET /api/mission-control/sessions/[sessionId] - Get a specific session
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    const { sessionId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
@@ -56,9 +57,10 @@ export async function GET(
 // DELETE /api/mission-control/sessions/[sessionId] - Delete a session
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    const { sessionId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
@@ -81,7 +83,7 @@ export async function DELETE(
 
     const missionSession = await prisma.missionControlSession.findFirst({
       where: {
-        id: params.sessionId,
+        id: sessionId,
         userId: user.id,
       },
     });

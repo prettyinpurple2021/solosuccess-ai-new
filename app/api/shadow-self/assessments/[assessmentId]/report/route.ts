@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,10 +13,11 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { assessmentId } = await params;
     // Verify assessment belongs to user
     const assessment = await prisma.shadowSelfAssessment.findFirst({
       where: {
-        id: params.assessmentId,
+        id: assessmentId,
         userId: session.user.id,
       },
     });
@@ -28,7 +29,7 @@ export async function GET(
     // Get report
     const report = await prisma.shadowSelfReport.findUnique({
       where: {
-        assessmentId: params.assessmentId,
+        assessmentId: assessmentId,
       },
     });
 

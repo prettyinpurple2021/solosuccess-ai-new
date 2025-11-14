@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { contentId: string } }
+  { params }: { params: Promise<{ contentId: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -21,9 +21,10 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const { contentId } = await params;
     const content = await prisma.generatedContent.findFirst({
       where: {
-        id: params.contentId,
+        id: contentId,
         userId: user.id,
       },
     });
@@ -44,7 +45,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { contentId: string } }
+  { params }: { params: Promise<{ contentId: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -61,13 +62,14 @@ export async function PATCH(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const { contentId } = await params;
     const body = await request.json();
     const { title, content, status } = body;
 
     // Verify ownership
     const existingContent = await prisma.generatedContent.findFirst({
       where: {
-        id: params.contentId,
+        id: contentId,
         userId: user.id,
       },
     });
@@ -78,7 +80,7 @@ export async function PATCH(
 
     // Update content
     const updatedContent = await prisma.generatedContent.update({
-      where: { id: params.contentId },
+      where: { id: contentId },
       data: {
         ...(title && { title }),
         ...(content && { content }),
@@ -98,7 +100,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { contentId: string } }
+  { params }: { params: Promise<{ contentId: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -106,6 +108,8 @@ export async function DELETE(
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { contentId } = await params;
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
@@ -118,7 +122,7 @@ export async function DELETE(
     // Verify ownership
     const existingContent = await prisma.generatedContent.findFirst({
       where: {
-        id: params.contentId,
+        id: contentId,
         userId: user.id,
       },
     });
@@ -129,7 +133,7 @@ export async function DELETE(
 
     // Delete content
     await prisma.generatedContent.delete({
-      where: { id: params.contentId },
+      where: { id: contentId },
     });
 
     return NextResponse.json({ message: 'Content deleted successfully' });

@@ -6,7 +6,7 @@ import { BiasDetectionService } from '@/lib/services/bias-detection';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { assessmentId: string } }
+  { params }: { params: Promise<{ assessmentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,13 +14,14 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { assessmentId } = await params;
     const body = await request.json();
     const { responses } = body;
 
     // Verify assessment exists and belongs to user
     const assessment = await prisma.shadowSelfAssessment.findFirst({
       where: {
-        id: params.assessmentId,
+        id: assessmentId,
         userId: session.user.id,
       },
     });
@@ -52,7 +53,7 @@ export async function POST(
     // Update assessment status
     const updatedAssessment = await prisma.shadowSelfAssessment.update({
       where: {
-        id: params.assessmentId,
+        id: assessmentId,
       },
       data: {
         status: 'completed',
@@ -65,7 +66,7 @@ export async function POST(
     // Create report
     const report = await prisma.shadowSelfReport.create({
       data: {
-        assessmentId: params.assessmentId,
+        assessmentId: assessmentId,
         identifiedBiases: analysis.biases,
         blindSpots: analysis.blindSpots,
         decisionPatterns: analysis.decisionPatterns,
@@ -76,13 +77,13 @@ export async function POST(
     });
 
     // Schedule initial coaching prompts
-    await scheduleCoachingPrompts(params.assessmentId, analysis);
+    await scheduleCoachingPrompts(assessmentId, analysis);
 
     // Auto-schedule quarterly reassessment
     const { ReassessmentService } = await import('@/lib/services/reassessment-service');
     await ReassessmentService.autoScheduleQuarterlyReassessment(
       session.user.id,
-      params.assessmentId
+      assessmentId
     );
 
     return NextResponse.json({

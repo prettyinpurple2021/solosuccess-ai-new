@@ -5,11 +5,12 @@ import { orchestrateMissionControl } from '@/lib/services/mission-control-orches
 // POST /api/mission-control/sessions/[sessionId]/process - Process a mission control session
 export async function POST(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    const { sessionId } = await params;
     const session = await prisma.missionControlSession.findUnique({
-      where: { id: params.sessionId },
+      where: { id: sessionId },
       include: {
         user: {
           include: {

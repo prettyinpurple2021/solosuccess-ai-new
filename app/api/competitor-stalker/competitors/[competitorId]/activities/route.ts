@@ -6,9 +6,10 @@ import { prisma } from '@/lib/prisma';
 // GET /api/competitor-stalker/competitors/[competitorId]/activities - Get activities for a competitor
 export async function GET(
   request: NextRequest,
-  { params }: { params: { competitorId: string } }
+  { params }: { params: Promise<{ competitorId: string }> }
 ) {
   try {
+    const { competitorId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
@@ -32,7 +33,7 @@ export async function GET(
     // Verify ownership of the competitor
     const competitor = await prisma.competitorProfile.findFirst({
       where: {
-        id: params.competitorId,
+        id: competitorId,
         userId: user.id,
       },
     });

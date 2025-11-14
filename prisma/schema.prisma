@@ -364,3 +364,81 @@ model ShadowSelfReassessment {
 
   @@index([userId, scheduledDate])
 }
+
+model DocumentTemplate {
+  id                String              @id @default(uuid())
+  name              String
+  description       String?
+  category          String
+  documentType      String
+  content           String
+  fields            Json
+  jurisdictions     String[]            @default([])
+  businessTypes     String[]            @default([])
+  isCustom          Boolean             @default(false)
+  createdBy         String?
+  isActive          Boolean             @default(true)
+  previewUrl        String?
+  metadata          Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  documents         GeneratedDocument[]
+
+  @@index([category, isActive])
+  @@index([documentType])
+}
+
+model GeneratedDocument {
+  id                    String             @id @default(uuid())
+  userId                String
+  templateId            String
+  title                 String
+  content               String
+  customizations        Json?
+  jurisdiction          String?
+  businessType          String?
+  status                String             @default("draft")
+  version               Int                @default(1)
+  disclaimerAccepted    Boolean            @default(false)
+  disclaimerAcceptedAt  DateTime?
+  pdfUrl                String?
+  docxUrl               String?
+  shareToken            String?            @unique
+  shareExpiresAt        DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  template              DocumentTemplate   @relation(fields: [templateId], references: [id])
+  versions              DocumentVersion[]
+  comments              DocumentComment[]
+
+  @@index([userId, status])
+  @@index([templateId])
+  @@index([shareToken])
+}
+
+model DocumentVersion {
+  id          String            @id @default(uuid())
+  documentId  String
+  version     Int
+  content     String
+  changes     String?
+  createdBy   String
+  createdAt   DateTime          @default(now())
+  document    GeneratedDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, version])
+}
+
+model DocumentComment {
+  id          String            @id @default(uuid())
+  documentId  String
+  userId      String
+  content     String
+  position    Json?
+  resolved    Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  document    GeneratedDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, resolved])
+}

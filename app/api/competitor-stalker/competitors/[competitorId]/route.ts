@@ -24,9 +24,10 @@ const updateCompetitorSchema = z.object({
 // GET /api/competitor-stalker/competitors/[competitorId] - Get a single competitor
 export async function GET(
   request: NextRequest,
-  { params }: { params: { competitorId: string } }
+  { params }: { params: Promise<{ competitorId: string }> }
 ) {
   try {
+    const { competitorId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
@@ -74,9 +75,10 @@ export async function GET(
 // PATCH /api/competitor-stalker/competitors/[competitorId] - Update a competitor
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { competitorId: string } }
+  { params }: { params: Promise<{ competitorId: string }> }
 ) {
   try {
+    const { competitorId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
@@ -100,7 +102,7 @@ export async function PATCH(
     // Verify ownership
     const existingCompetitor = await prisma.competitorProfile.findFirst({
       where: {
-        id: params.competitorId,
+        id: competitorId,
         userId: user.id,
       },
     });
@@ -117,7 +119,7 @@ export async function PATCH(
 
     // Update the competitor
     const competitor = await prisma.competitorProfile.update({
-      where: { id: params.competitorId },
+      where: { id: competitorId },
       data: {
         ...(validatedData.name && { name: validatedData.name }),
         ...(validatedData.website !== undefined && { website: validatedData.website || null }),
@@ -148,9 +150,10 @@ export async function PATCH(
 // DELETE /api/competitor-stalker/competitors/[competitorId] - Delete a competitor
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { competitorId: string } }
+  { params }: { params: Promise<{ competitorId: string }> }
 ) {
   try {
+    const { competitorId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
@@ -174,7 +177,7 @@ export async function DELETE(
     // Verify ownership
     const existingCompetitor = await prisma.competitorProfile.findFirst({
       where: {
-        id: params.competitorId,
+        id: competitorId,
         userId: user.id,
       },
     });
@@ -188,7 +191,7 @@ export async function DELETE(
 
     // Delete the competitor (cascade will delete activities)
     await prisma.competitorProfile.delete({
-      where: { id: params.competitorId },
+      where: { id: competitorId },
     });
 
     return NextResponse.json({ success: true });

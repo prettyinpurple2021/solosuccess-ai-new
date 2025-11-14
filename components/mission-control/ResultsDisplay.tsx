@@ -79,8 +79,8 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ session }) => {
     });
   };
 
-  const handleExport = (format: 'json' | 'markdown' = 'markdown') => {
-    exportSession({ sessionId: session.id, format });
+  const handleExport = () => {
+    exportSession({ sessionId: session.id, format: 'markdown' });
   };
 
   const tabs = [
