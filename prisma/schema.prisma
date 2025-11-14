@@ -22,8 +22,22 @@ model User {
   email              String    @unique
   passwordHash       String?
   emailVerified      Boolean   @default(false)
+  stripeCustomerId   String?   @unique
   subscriptionTier   String    @default("free")
   subscriptionStatus String    @default("active")
+  
+  // MFA fields
+  mfaEnabled         Boolean   @default(false)
+  mfaSecret          String?
+  recoveryCodes      String[]  @default([])
+  
+  // Password reset fields
+  resetToken         String?
+  resetTokenExpiry   DateTime?
+  
+  // Token version for refresh token rotation
+  tokenVersion       Int       @default(0)
+  
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   deletedAt          DateTime?
@@ -38,6 +52,8 @@ model User {
   competitorProfiles     CompetitorProfile[]
 
   @@index([email])
+  @@index([stripeCustomerId])
+  @@index([resetToken])
 }
 
 model UserProfile {
