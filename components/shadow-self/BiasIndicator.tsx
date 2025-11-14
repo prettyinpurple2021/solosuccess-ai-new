@@ -69,7 +69,7 @@ export const BiasIndicator: React.FC<BiasIndicatorProps> = ({
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={cn(
-            'p-2 rounded-lg bg-gradient-to-br',
+            'p-2 rounded-lg bg-linear-to-br',
             getSeverityColor()
           )}>
             {getSeverityIcon()}
@@ -92,7 +92,7 @@ export const BiasIndicator: React.FC<BiasIndicatorProps> = ({
       {/* Score bar */}
       <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
         <motion.div
-          className={cn('absolute inset-y-0 left-0 rounded-full bg-gradient-to-r', getSeverityColor())}
+          className={cn('absolute inset-y-0 left-0 rounded-full bg-linear-to-r', getSeverityColor())}
           initial={{ width: 0 }}
           animate={{ width: `${score}%` }}
           transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}

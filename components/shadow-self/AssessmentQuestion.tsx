@@ -50,14 +50,14 @@ export const AssessmentQuestion: React.FC<AssessmentQuestionProps> = ({
                 'backdrop-blur-xl border',
                 'hover:shadow-lg hover:shadow-purple-500/20',
                 isSelected
-                  ? 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 border-purple-400/50 shadow-lg shadow-purple-500/30'
+                  ? 'bg-linear-to-r from-purple-500/30 to-pink-500/30 border-purple-400/50 shadow-lg shadow-purple-500/30'
                   : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-400/30'
               )}
             >
               <div className="flex items-start gap-4">
                 <div
                   className={cn(
-                    'flex-shrink-0 w-6 h-6 rounded-full border-2 transition-all duration-300 mt-0.5',
+                    'shrink-0 w-6 h-6 rounded-full border-2 transition-all duration-300 mt-0.5',
                     isSelected
                       ? 'border-purple-400 bg-purple-500'
                       : 'border-gray-500'

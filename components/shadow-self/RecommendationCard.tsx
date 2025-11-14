@@ -46,7 +46,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
       <GlassmorphicCard className="p-6">
         <div className="flex items-start gap-4 mb-4">
           <div className={cn(
-            'flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center',
+            'shrink-0 w-12 h-12 rounded-xl bg-linear-to-br flex items-center justify-center',
             getPriorityColor()
           )}>
             <Lightbulb className="w-6 h-6 text-white" />
@@ -76,7 +76,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
                   transition={{ delay: index * 0.1 + actionIndex * 0.05 }}
                   className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                 >
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center mt-0.5">
+                  <div className="shrink-0 w-6 h-6 rounded-full bg-linear-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center mt-0.5">
                     <span className="text-xs font-bold text-white">{actionIndex + 1}</span>
                   </div>
                   <p className="text-gray-300 text-sm leading-relaxed flex-1">
@@ -97,7 +97,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
                 {recommendation.resources.map((resource, resourceIndex) => (
                   <span
                     key={resourceIndex}
-                    className="px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 text-xs"
+                    className="px-3 py-1.5 rounded-full bg-linear-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 text-xs"
                   >
                     {resource}
                   </span>
