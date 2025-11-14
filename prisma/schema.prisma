@@ -299,3 +299,68 @@ model PreMortemReport {
 
   @@index([simulationId])
 }
+
+model ShadowSelfAssessment {
+  id                String                    @id @default(uuid())
+  userId            String
+  status            String                    @default("in_progress")
+  currentStep       Int                       @default(0)
+  totalSteps        Int                       @default(0)
+  responses         Json
+  completedAt       DateTime?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  report            ShadowSelfReport?
+  coachingPrompts   ShadowSelfCoachingPrompt[]
+
+  @@index([userId, status])
+}
+
+model ShadowSelfReport {
+  id                    String                 @id @default(uuid())
+  assessmentId          String                 @unique
+  identifiedBiases      Json
+  blindSpots            Json
+  decisionPatterns      Json
+  impactExamples        Json
+  recommendations       Json
+  overallScore          Int?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  assessment            ShadowSelfAssessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+}
+
+model ShadowSelfCoachingPrompt {
+  id                String                 @id @default(uuid())
+  assessmentId      String
+  promptType        String
+  title             String
+  content           String
+  targetBias        String?
+  deliveredAt       DateTime?
+  completedAt       DateTime?
+  userResponse      String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  assessment        ShadowSelfAssessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId, deliveredAt])
+}
+
+model ShadowSelfReassessment {
+  id                    String   @id @default(uuid())
+  userId                String
+  previousAssessmentId  String
+  currentAssessmentId   String
+  comparisonData        Json
+  progressMetrics       Json
+  evolutionPatterns     Json
+  scheduledDate         DateTime
+  completedAt           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId, scheduledDate])
+}
