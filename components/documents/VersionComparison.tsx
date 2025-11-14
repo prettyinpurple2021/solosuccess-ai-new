@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GitCompare, Clock, ChevronDown } from 'lucide-react';
-import { Select } from '@/components/ui/Select';
+import { SimpleSelect } from '@/components/ui/SimpleSelect';
 
 interface DocumentVersion {
   id: string;
@@ -116,7 +116,7 @@ export function VersionComparison({ versions, currentVersion }: VersionCompariso
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Version 1
               </label>
-              <Select
+              <SimpleSelect
                 value={selectedVersion1}
                 onChange={(e) => setSelectedVersion1(e.target.value)}
               >
@@ -125,13 +125,13 @@ export function VersionComparison({ versions, currentVersion }: VersionCompariso
                     Version {v.version} - {new Date(v.createdAt).toLocaleDateString()}
                   </option>
                 ))}
-              </Select>
+              </SimpleSelect>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Version 2
               </label>
-              <Select
+              <SimpleSelect
                 value={selectedVersion2}
                 onChange={(e) => setSelectedVersion2(e.target.value)}
               >
@@ -140,7 +140,7 @@ export function VersionComparison({ versions, currentVersion }: VersionCompariso
                     Version {v.version} - {new Date(v.createdAt).toLocaleDateString()}
                   </option>
                 ))}
-              </Select>
+              </SimpleSelect>
             </div>
           </div>
 

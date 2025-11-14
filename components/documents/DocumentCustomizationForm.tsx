@@ -7,7 +7,7 @@ import { DocumentTemplate, useGenerateDocument } from '@/lib/hooks/useDocumentGe
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
-import { Select } from '@/components/ui/Select';
+import { SimpleSelect } from '@/components/ui/SimpleSelect';
 import { Button } from '@/components/ui/Button';
 import { jurisdictions, businessTypes } from '@/lib/data/document-templates';
 
@@ -27,7 +27,7 @@ export function DocumentCustomizationForm({
   const [businessType, setBusinessType] = useState('');
   const [customizations, setCustomizations] = useState<Record<string, any>>(() => {
     const initial: Record<string, any> = {};
-    template.fields.forEach(field => {
+    template.fields.forEach((field: any) => {
       initial[field.name] = field.defaultValue || '';
     });
     return initial;
@@ -60,7 +60,14 @@ export function DocumentCustomizationForm({
     }
   };
 
-  const renderField = (field: any) => {
+  const renderField = (field: {
+    name: string;
+    label: string;
+    type: string;
+    required: boolean;
+    placeholder?: string;
+    options?: string[];
+  }) => {
     const commonProps = {
       id: field.name,
       value: customizations[field.name] || '',
@@ -75,14 +82,14 @@ export function DocumentCustomizationForm({
         return <Textarea {...commonProps} rows={4} />;
       case 'select':
         return (
-          <Select {...commonProps}>
+          <SimpleSelect {...commonProps}>
             <option value="">Select {field.label}</option>
             {field.options?.map((option: string) => (
               <option key={option} value={option}>
                 {option}
               </option>
             ))}
-          </Select>
+          </SimpleSelect>
         );
       case 'date':
         return <Input {...commonProps} type="date" />;
@@ -143,7 +150,7 @@ export function DocumentCustomizationForm({
               {template.jurisdictions.length > 1 && (
                 <div>
                   <Label htmlFor="jurisdiction">Jurisdiction</Label>
-                  <Select
+                  <SimpleSelect
                     id="jurisdiction"
                     value={jurisdiction}
                     onChange={(e) => setJurisdiction(e.target.value)}
@@ -156,14 +163,14 @@ export function DocumentCustomizationForm({
                           {j.label}
                         </option>
                       ))}
-                  </Select>
+                  </SimpleSelect>
                 </div>
               )}
 
               {template.businessTypes.length > 1 && (
                 <div>
                   <Label htmlFor="businessType">Business Type</Label>
-                  <Select
+                  <SimpleSelect
                     id="businessType"
                     value={businessType}
                     onChange={(e) => setBusinessType(e.target.value)}
@@ -176,7 +183,7 @@ export function DocumentCustomizationForm({
                           {b.label}
                         </option>
                       ))}
-                  </Select>
+                  </SimpleSelect>
                 </div>
               )}
             </div>
@@ -192,7 +199,7 @@ export function DocumentCustomizationForm({
         >
           <h3 className="text-lg font-semibold mb-4">Document Details</h3>
           <div className="space-y-4">
-            {template.fields.map((field, index) => (
+            {template.fields.map((field: any, index: number) => (
               <motion.div
                 key={field.name}
                 initial={{ opacity: 0, x: -20 }}

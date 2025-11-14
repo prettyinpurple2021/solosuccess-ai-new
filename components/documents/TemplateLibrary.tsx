@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, FileText } from 'lucide-react';
 import { useDocumentTemplates, DocumentTemplate } from '@/lib/hooks/useDocumentGeneration';
 import { TemplateCard } from './TemplateCard';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { SimpleSelect } from '@/components/ui/SimpleSelect';
 import { documentCategories, jurisdictions, businessTypes } from '@/lib/data/document-templates';
 
 interface TemplateLibraryProps {
@@ -57,7 +57,7 @@ export function TemplateLibrary({ onSelectTemplate }: TemplateLibraryProps) {
           </div>
 
           {/* Category Filter */}
-          <Select
+          <SimpleSelect
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
@@ -67,10 +67,10 @@ export function TemplateLibrary({ onSelectTemplate }: TemplateLibraryProps) {
                 {cat.label}
               </option>
             ))}
-          </Select>
+          </SimpleSelect>
 
           {/* Jurisdiction Filter */}
-          <Select
+          <SimpleSelect
             value={selectedJurisdiction}
             onChange={(e) => setSelectedJurisdiction(e.target.value)}
           >
@@ -80,10 +80,10 @@ export function TemplateLibrary({ onSelectTemplate }: TemplateLibraryProps) {
                 {jur.label}
               </option>
             ))}
-          </Select>
+          </SimpleSelect>
 
           {/* Business Type Filter */}
-          <Select
+          <SimpleSelect
             value={selectedBusinessType}
             onChange={(e) => setSelectedBusinessType(e.target.value)}
           >
@@ -93,7 +93,7 @@ export function TemplateLibrary({ onSelectTemplate }: TemplateLibraryProps) {
                 {type.label}
               </option>
             ))}
-          </Select>
+          </SimpleSelect>
         </div>
 
         {/* Active Filters */}

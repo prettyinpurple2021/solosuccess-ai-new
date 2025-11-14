@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { FileText, Plus, Search, Filter, Calendar, Tag } from 'lucide-react';
 import { useUserDocuments } from '@/lib/hooks/useDocumentGeneration';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { SimpleSelect } from '@/components/ui/SimpleSelect';
 import { Button } from '@/components/ui/Button';
 
 export default function MyDocumentsPage() {
@@ -73,7 +73,7 @@ export default function MyDocumentsPage() {
             </div>
 
             {/* Status Filter */}
-            <Select
+            <SimpleSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -81,7 +81,7 @@ export default function MyDocumentsPage() {
               <option value="draft">Draft</option>
               <option value="final">Final</option>
               <option value="archived">Archived</option>
-            </Select>
+            </SimpleSelect>
           </div>
         </div>
 
