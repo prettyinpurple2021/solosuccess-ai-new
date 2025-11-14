@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
           error: {
             code: 'INVALID_INPUT',
             message: 'Validation failed',
-            details: validation.error.errors,
+            details: validation.error.issues,
           },
         },
         { status: 400 }
