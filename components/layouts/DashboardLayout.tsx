@@ -45,11 +45,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         />
 
         {/* Page Content */}
-        <main className="p-4 md:p-6 lg:p-8">
+        <main className="p-3 sm:p-4 md:p-6 lg:p-8 pb-20 sm:pb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
+            className="max-w-full overflow-x-hidden"
           >
             {children}
           </motion.div>

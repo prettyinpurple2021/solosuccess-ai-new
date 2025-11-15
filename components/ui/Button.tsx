@@ -11,6 +11,7 @@ export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'variant' |
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   loading?: boolean;
+  touchOptimized?: boolean; // Ensures minimum 44x44px touch target
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -22,24 +23,25 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       size = 'md',
       disabled = false,
       loading = false,
+      touchOptimized = true,
       ...props
     },
     ref
   ) => {
-    const baseClasses = 'font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+    const baseClasses = 'font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95';
 
     const variantClasses = {
-      primary: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500',
-      secondary: 'bg-purple-600 hover:bg-purple-700 text-white focus:ring-purple-500',
-      outline: 'border-2 border-white/30 hover:border-white/50 bg-transparent hover:bg-white/10 text-white',
-      ghost: 'bg-transparent hover:bg-white/10 text-white',
-      gradient: 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl',
+      primary: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white focus:ring-blue-500',
+      secondary: 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white focus:ring-purple-500',
+      outline: 'border-2 border-white/30 hover:border-white/50 active:border-white/60 bg-transparent hover:bg-white/10 active:bg-white/20 text-white',
+      ghost: 'bg-transparent hover:bg-white/10 active:bg-white/20 text-white',
+      gradient: 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 active:from-blue-800 active:to-purple-800 text-white shadow-lg hover:shadow-xl',
     };
 
     const sizeClasses = {
-      sm: 'px-3 py-1.5 text-sm',
-      md: 'px-4 py-2 text-base',
-      lg: 'px-6 py-3 text-lg',
+      sm: touchOptimized ? 'px-4 py-2.5 text-sm min-h-[44px]' : 'px-3 py-1.5 text-sm',
+      md: touchOptimized ? 'px-5 py-3 text-base min-h-[48px]' : 'px-4 py-2 text-base',
+      lg: touchOptimized ? 'px-7 py-4 text-lg min-h-[56px]' : 'px-6 py-3 text-lg',
     };
 
     const disabledClasses = 'opacity-50 cursor-not-allowed';

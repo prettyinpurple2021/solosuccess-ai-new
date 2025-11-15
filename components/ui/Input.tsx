@@ -10,6 +10,7 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   helperText?: string;
   icon?: React.ReactNode;
   inputSize?: 'sm' | 'md' | 'lg';
+  touchOptimized?: boolean; // Ensures minimum 44px height for touch devices
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
@@ -23,14 +24,15 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       inputSize = 'md',
       type = 'text',
       disabled,
+      touchOptimized = true,
       ...props
     },
     ref
   ) => {
     const sizeClasses = {
-      sm: 'px-3 py-1.5 text-sm',
-      md: 'px-4 py-2 text-base',
-      lg: 'px-5 py-3 text-lg',
+      sm: touchOptimized ? 'px-4 py-2.5 text-sm min-h-[44px]' : 'px-3 py-1.5 text-sm',
+      md: touchOptimized ? 'px-4 py-3 text-base min-h-[48px]' : 'px-4 py-2 text-base',
+      lg: touchOptimized ? 'px-5 py-4 text-lg min-h-[56px]' : 'px-5 py-3 text-lg',
     };
 
     return (

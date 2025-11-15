@@ -52,6 +52,56 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Responsive Typography */
+html {
+  /* Base font size scales with viewport */
+  font-size: clamp(14px, 1vw + 0.5rem, 16px);
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: clamp(16px, 1vw, 18px);
+  }
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets on touch devices */
+  button, a, input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Reduce hover effects on touch devices */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Smooth scrolling */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Glassmorphism utility classes */
 .glass {
   background: var(--glass-bg);
