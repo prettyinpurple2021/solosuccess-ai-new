@@ -3,6 +3,8 @@ import { SignJWT, jwtVerify } from 'jose';
 import { encrypt, decrypt } from '@/lib/security/encryption';
 import { generateSecureRandomString } from '@/lib/security/encryption';
 import { notificationService } from './notification-service';
+import { SecurityEventService } from './security-event.service';
+import { RateLimiterService } from './rate-limiter.service';
 
 const INTEL_ACADEMY_API_URL = process.env.INTEL_ACADEMY_API_URL || 'https://api.intelacademy.com';
 const INTEL_ACADEMY_CLIENT_ID = process.env.INTEL_ACADEMY_CLIENT_ID || '';
@@ -11,9 +13,10 @@ const INTEL_ACADEMY_REDIRECT_URI = process.env.INTEL_ACADEMY_REDIRECT_URI || '';
 const JWT_SECRET = process.env.JWT_SECRET || '';
 
 // Rate limiting configuration
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 100;
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_CONFIG = {
+  maxRequests: parseInt(process.env.INTEL_ACADEMY_RATE_LIMIT || '100'),
+  windowMs: parseInt(process.env.INTEL_ACADEMY_RATE_WINDOW || '60000'), // 1 minute
+};
 
 export interface IntelAcademyTokenResponse {
   access_token: string;
@@ -52,27 +55,19 @@ export interface IntelAcademyAchievement {
 
 export class IntelAcademyService {
   /**
-   * Check rate limit for user
+   * Execute API call with rate limiting
    */
-  private static checkRateLimit(userId: string): void {
-    const now = Date.now();
-    const userLimit = rateLimitMap.get(userId);
-
-    if (!userLimit || now > userLimit.resetAt) {
-      // Reset or initialize rate limit
-      rateLimitMap.set(userId, {
-        count: 1,
-        resetAt: now + RATE_LIMIT_WINDOW,
-      });
-      return;
-    }
-
-    if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
-      const waitTime = Math.ceil((userLimit.resetAt - now) / 1000);
-      throw new Error(`Rate limit exceeded. Please try again in ${waitTime} seconds.`);
-    }
-
-    userLimit.count++;
+  private static async executeWithRateLimit<T>(
+    userId: string,
+    fn: () => Promise<T>
+  ): Promise<T> {
+    const rateLimitKey = `intel-academy:${userId}`;
+    return RateLimiterService.executeWithLimit(
+      rateLimitKey,
+      RATE_LIMIT_CONFIG,
+      fn,
+      userId
+    );
   }
 
   /**
@@ -299,6 +294,16 @@ export class IntelAcademyService {
       await this.storeIntegration(userId, newTokenData, integration.intelAcademyUserId || undefined);
       return newTokenData.access_token;
     } catch (error) {
+      // Log token refresh failure
+      await SecurityEventService.logTokenRefreshFailed(
+        userId,
+        (error as Error).message,
+        {
+          intelAcademyUserId: integration.intelAcademyUserId,
+          lastSyncAt: integration.lastSyncAt,
+        }
+      );
+      
       // Mark integration as inactive if refresh fails
       await prisma.intelAcademyIntegration.update({
         where: { userId },
@@ -324,21 +329,21 @@ export class IntelAcademyService {
    * Get user info from Intel Academy with rate limiting
    */
   static async getUserInfo(userId: string, accessToken: string): Promise<IntelAcademyUserInfo> {
-    this.checkRateLimit(userId);
+    return this.executeWithRateLimit(userId, async () => {
+      return this.retryWithBackoff(async () => {
+        const response = await fetch(`${INTEL_ACADEMY_API_URL}/api/v1/user/me`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
-    return this.retryWithBackoff(async () => {
-      const response = await fetch(`${INTEL_ACADEMY_API_URL}/api/v1/user/me`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to get user info: ${response.status} ${errorText}`);
+        }
+
+        return response.json();
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to get user info: ${response.status} ${errorText}`);
-      }
-
-      return response.json();
     });
   }
 
@@ -346,21 +351,21 @@ export class IntelAcademyService {
    * Fetch user courses from Intel Academy
    */
   static async fetchUserCourses(userId: string, accessToken: string): Promise<IntelAcademyCourse[]> {
-    this.checkRateLimit(userId);
+    return this.executeWithRateLimit(userId, async () => {
+      return this.retryWithBackoff(async () => {
+        const response = await fetch(`${INTEL_ACADEMY_API_URL}/api/v1/user/courses`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
-    return this.retryWithBackoff(async () => {
-      const response = await fetch(`${INTEL_ACADEMY_API_URL}/api/v1/user/courses`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to fetch courses: ${response.status} ${errorText}`);
+        }
+
+        return response.json();
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch courses: ${response.status} ${errorText}`);
-      }
-
-      return response.json();
     });
   }
 
@@ -368,21 +373,21 @@ export class IntelAcademyService {
    * Fetch user achievements from Intel Academy
    */
   static async fetchUserAchievements(userId: string, accessToken: string): Promise<IntelAcademyAchievement[]> {
-    this.checkRateLimit(userId);
+    return this.executeWithRateLimit(userId, async () => {
+      return this.retryWithBackoff(async () => {
+        const response = await fetch(`${INTEL_ACADEMY_API_URL}/api/v1/user/achievements`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
-    return this.retryWithBackoff(async () => {
-      const response = await fetch(`${INTEL_ACADEMY_API_URL}/api/v1/user/achievements`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to fetch achievements: ${response.status} ${errorText}`);
+        }
+
+        return response.json();
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch achievements: ${response.status} ${errorText}`);
-      }
-
-      return response.json();
     });
   }
 
@@ -416,27 +421,27 @@ export class IntelAcademyService {
    * Sync subscription tier with Intel Academy
    */
   static async syncSubscriptionTier(userId: string, subscriptionTier: string): Promise<void> {
-    this.checkRateLimit(userId);
-
     try {
       const accessToken = await this.ensureValidToken(userId);
 
-      await this.retryWithBackoff(async () => {
-        const response = await fetch(`${INTEL_ACADEMY_API_URL}/api/v1/user/subscription`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            subscription_tier: subscriptionTier,
-          }),
-        });
+      await this.executeWithRateLimit(userId, async () => {
+        return this.retryWithBackoff(async () => {
+          const response = await fetch(`${INTEL_ACADEMY_API_URL}/api/v1/user/subscription`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              subscription_tier: subscriptionTier,
+            }),
+          });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to sync subscription tier: ${response.status} ${errorText}`);
-        }
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to sync subscription tier: ${response.status} ${errorText}`);
+          }
+        });
       });
 
       await prisma.intelAcademyIntegration.update({

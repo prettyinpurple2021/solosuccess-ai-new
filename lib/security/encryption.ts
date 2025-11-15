@@ -1,240 +1,159 @@
 import crypto from 'crypto';
 
-/**
- * Encryption utilities for sensitive data
- * Uses AES-256-GCM for encryption
- */
-
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
-const AUTH_TAG_LENGTH = 16;
-const SALT_LENGTH = 64;
+const SALT_LENGTH = 32;
+const TAG_LENGTH = 16;
+const KEY_LENGTH = 32;
+const ITERATIONS = 100000;
 
 /**
- * Get encryption key from environment
+ * Derive encryption key from password using PBKDF2
  */
-function getEncryptionKey(): Buffer {
-  const key = process.env.ENCRYPTION_KEY;
-  if (!key) {
-    throw new Error('ENCRYPTION_KEY environment variable is not set');
-  }
-  // Ensure key is 32 bytes for AES-256
-  return crypto.scryptSync(key, 'salt', 32);
+function deriveKey(password: string, salt: Buffer): Buffer {
+  return crypto.pbkdf2Sync(password, salt, ITERATIONS, KEY_LENGTH, 'sha256');
 }
 
 /**
- * Encrypt sensitive data
+ * Encrypt data using AES-256-GCM
  */
 export function encrypt(text: string): string {
-  try {
-    const key = getEncryptionKey();
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-
-    const authTag = cipher.getAuthTag();
-
-    // Combine iv + authTag + encrypted data
-    return iv.toString('hex') + authTag.toString('hex') + encrypted;
-  } catch (error) {
-    console.error('Encryption error:', error);
-    throw new Error('Failed to encrypt data');
+  if (!text) {
+    throw new Error('Text to encrypt cannot be empty');
   }
+
+  if (!ENCRYPTION_KEY) {
+    throw new Error('ENCRYPTION_KEY environment variable is not set');
+  }
+
+  // Generate random salt and IV
+  const salt = crypto.randomBytes(SALT_LENGTH);
+  const iv = crypto.randomBytes(IV_LENGTH);
+
+  // Derive key from encryption key and salt
+  const key = deriveKey(ENCRYPTION_KEY, salt);
+
+  // Create cipher
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+
+  // Encrypt the text
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+
+  // Get authentication tag
+  const authTag = cipher.getAuthTag();
+
+  // Combine salt + iv + authTag + encrypted data
+  const result = Buffer.concat([
+    salt,
+    iv,
+    authTag,
+    Buffer.from(encrypted, 'hex'),
+  ]);
+
+  return result.toString('base64');
 }
 
 /**
- * Decrypt sensitive data
+ * Decrypt data using AES-256-GCM
  */
-export function decrypt(encryptedData: string): string {
+export function decrypt(encryptedText: string): string {
+  if (!encryptedText) {
+    throw new Error('Encrypted text cannot be empty');
+  }
+
+  if (!ENCRYPTION_KEY) {
+    throw new Error('ENCRYPTION_KEY environment variable is not set');
+  }
+
   try {
-    const key = getEncryptionKey();
+    // Decode from base64
+    const buffer = Buffer.from(encryptedText, 'base64');
 
-    // Extract iv, authTag, and encrypted data
-    const iv = Buffer.from(encryptedData.slice(0, IV_LENGTH * 2), 'hex');
-    const authTag = Buffer.from(
-      encryptedData.slice(IV_LENGTH * 2, (IV_LENGTH + AUTH_TAG_LENGTH) * 2),
-      'hex'
+    // Extract components
+    const salt = buffer.subarray(0, SALT_LENGTH);
+    const iv = buffer.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+    const authTag = buffer.subarray(
+      SALT_LENGTH + IV_LENGTH,
+      SALT_LENGTH + IV_LENGTH + TAG_LENGTH
     );
-    const encrypted = encryptedData.slice((IV_LENGTH + AUTH_TAG_LENGTH) * 2);
+    const encrypted = buffer.subarray(SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
 
+    // Derive key from encryption key and salt
+    const key = deriveKey(ENCRYPTION_KEY, salt);
+
+    // Create decipher
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(authTag);
 
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    // Decrypt the data
+    let decrypted = decipher.update(encrypted.toString('hex'), 'hex', 'utf8');
     decrypted += decipher.final('utf8');
 
     return decrypted;
   } catch (error) {
-    console.error('Decryption error:', error);
-    throw new Error('Failed to decrypt data');
+    throw new Error(`Decryption failed: ${(error as Error).message}`);
   }
 }
 
 /**
- * Hash sensitive data (one-way)
- * Uses SHA-256 with salt
+ * Generate a cryptographically secure random string
  */
-export function hash(data: string, salt?: string): string {
-  const actualSalt = salt || crypto.randomBytes(SALT_LENGTH).toString('hex');
-  const hash = crypto.pbkdf2Sync(data, actualSalt, 100000, 64, 'sha512').toString('hex');
-  return `${actualSalt}:${hash}`;
-}
-
-/**
- * Verify hashed data
- */
-export function verifyHash(data: string, hashedData: string): boolean {
-  try {
-    const [salt, originalHash] = hashedData.split(':');
-    const hash = crypto.pbkdf2Sync(data, salt, 100000, 64, 'sha512').toString('hex');
-    return hash === originalHash;
-  } catch (error) {
-    console.error('Hash verification error:', error);
-    return false;
-  }
-}
-
-/**
- * Generate secure random token
- */
-export function generateSecureToken(length: number = 32): string {
+export function generateSecureRandomString(length: number = 32): string {
   return crypto.randomBytes(length).toString('hex');
 }
 
 /**
- * Generate cryptographically secure random string
- */
-export function generateSecureRandomString(length: number = 32): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const randomBytes = crypto.randomBytes(length);
-  let result = '';
-
-  for (let i = 0; i < length; i++) {
-    result += chars[randomBytes[i] % chars.length];
-  }
-
-  return result;
-}
-
-/**
- * Encrypt field-level data for database storage
- */
-export class FieldEncryption {
-  /**
-   * Encrypt a field value
-   */
-  static encryptField(value: string | null | undefined): string | null {
-    if (!value) return null;
-    return encrypt(value);
-  }
-
-  /**
-   * Decrypt a field value
-   */
-  static decryptField(encryptedValue: string | null | undefined): string | null {
-    if (!encryptedValue) return null;
-    try {
-      return decrypt(encryptedValue);
-    } catch (error) {
-      console.error('Field decryption error:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Encrypt multiple fields in an object
-   */
-  static encryptFields<T extends Record<string, any>>(
-    obj: T,
-    fields: (keyof T)[]
-  ): T {
-    const encrypted = { ...obj };
-    for (const field of fields) {
-      if (typeof encrypted[field] === 'string') {
-        encrypted[field] = this.encryptField(encrypted[field] as string) as any;
-      }
-    }
-    return encrypted;
-  }
-
-  /**
-   * Decrypt multiple fields in an object
-   */
-  static decryptFields<T extends Record<string, any>>(
-    obj: T,
-    fields: (keyof T)[]
-  ): T {
-    const decrypted = { ...obj };
-    for (const field of fields) {
-      if (typeof decrypted[field] === 'string') {
-        decrypted[field] = this.decryptField(decrypted[field] as string) as any;
-      }
-    }
-    return decrypted;
-  }
-}
-
-/**
- * Mask sensitive data for logging
- */
-export function maskSensitiveData(data: string, visibleChars: number = 4): string {
-  if (data.length <= visibleChars) {
-    return '*'.repeat(data.length);
-  }
-  return data.slice(0, visibleChars) + '*'.repeat(data.length - visibleChars);
-}
-
-/**
- * Mask email address
- */
-export function maskEmail(email: string): string {
-  const [username, domain] = email.split('@');
-  if (!domain) return maskSensitiveData(email);
-
-  const maskedUsername =
-    username.length > 2
-      ? username[0] + '*'.repeat(username.length - 2) + username[username.length - 1]
-      : '*'.repeat(username.length);
-
-  return `${maskedUsername}@${domain}`;
-}
-
-/**
- * Mask credit card number
- */
-export function maskCreditCard(cardNumber: string): string {
-  const cleaned = cardNumber.replace(/\s/g, '');
-  if (cleaned.length < 4) return '*'.repeat(cleaned.length);
-  return '*'.repeat(cleaned.length - 4) + cleaned.slice(-4);
-}
-
-/**
- * Secure comparison to prevent timing attacks
- */
-export function secureCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  const bufferA = Buffer.from(a);
-  const bufferB = Buffer.from(b);
-
-  return crypto.timingSafeEqual(bufferA, bufferB);
-}
-
-/**
- * Generate HMAC signature
+ * Generate HMAC SHA-256 signature
  */
 export function generateHmac(data: string, secret: string): string {
   return crypto.createHmac('sha256', secret).update(data).digest('hex');
 }
 
 /**
- * Verify HMAC signature
+ * Verify HMAC SHA-256 signature
  */
 export function verifyHmac(data: string, signature: string, secret: string): boolean {
   const expectedSignature = generateHmac(data, secret);
-  return secureCompare(signature, expectedSignature);
+  
+  // Use timing-safe comparison to prevent timing attacks
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
+    );
+  } catch {
+    // If lengths don't match, timingSafeEqual throws
+    return false;
+  }
+}
+
+/**
+ * Hash password using bcrypt-like approach with PBKDF2
+ */
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(SALT_LENGTH);
+  const hash = crypto.pbkdf2Sync(password, salt, ITERATIONS, KEY_LENGTH, 'sha256');
+  
+  // Combine salt and hash
+  const combined = Buffer.concat([salt, hash]);
+  return combined.toString('base64');
+}
+
+/**
+ * Verify password against hash
+ */
+export function verifyPassword(password: string, hashedPassword: string): boolean {
+  try {
+    const combined = Buffer.from(hashedPassword, 'base64');
+    const salt = combined.subarray(0, SALT_LENGTH);
+    const hash = combined.subarray(SALT_LENGTH);
+    
+    const verifyHash = crypto.pbkdf2Sync(password, salt, ITERATIONS, KEY_LENGTH, 'sha256');
+    
+    return crypto.timingSafeEqual(hash, verifyHash);
+  } catch {
+    return false;
+  }
 }

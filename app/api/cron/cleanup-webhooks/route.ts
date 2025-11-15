@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WebhookService } from '@/lib/services/intel-academy-webhook.service';
 import { addBreadcrumb } from '@/lib/monitoring';
+import { SecurityEventService } from '@/lib/services/security-event.service';
 
 /**
  * GET /api/cron/cleanup-webhooks
@@ -18,6 +19,17 @@ export async function GET(request: NextRequest) {
       const sourceIp = request.headers.get('x-forwarded-for') || 
                        request.headers.get('x-real-ip') || 
                        'unknown';
+      const userAgent = request.headers.get('user-agent');
+      
+      await SecurityEventService.logInvalidCronSecret(
+        sourceIp,
+        userAgent,
+        '/api/cron/cleanup-webhooks',
+        {
+          authHeaderPresent: !!authHeader,
+          timestamp: new Date().toISOString(),
+        }
+      );
       
       addBreadcrumb(
         'Invalid CRON_SECRET attempt for cleanup-webhooks',

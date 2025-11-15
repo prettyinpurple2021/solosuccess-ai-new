@@ -22,14 +22,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify webhook signature using HMAC SHA-256
-    const isValid = WebhookService.verifySignature(body, signature);
+    const sourceIp = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = request.headers.get('user-agent');
+    
+    const isValid = await WebhookService.verifySignature(body, signature, sourceIp, userAgent || undefined);
     
     if (!isValid) {
-      // Log security event for failed signature verification
-      const sourceIp = request.headers.get('x-forwarded-for') || 
-                       request.headers.get('x-real-ip') || 
-                       'unknown';
-      
       addBreadcrumb(
         'Intel Academy webhook signature verification failed',
         'security',

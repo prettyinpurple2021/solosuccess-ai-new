@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { verifyHmac } from '@/lib/security/encryption';
 import { notificationService } from './notification-service';
+import { SecurityEventService } from './security-event.service';
 
 const INTEL_ACADEMY_WEBHOOK_SECRET = process.env.INTEL_ACADEMY_WEBHOOK_SECRET || '';
 
@@ -50,15 +51,51 @@ export class WebhookService {
   /**
    * Verify HMAC SHA-256 signature for webhook
    */
-  static verifySignature(payload: string, signature: string): boolean {
+  static async verifySignature(
+    payload: string,
+    signature: string,
+    ip?: string,
+    userAgent?: string
+  ): Promise<boolean> {
     if (!signature) {
+      // Log missing signature
+      if (ip) {
+        await SecurityEventService.logWebhookSignatureFailed(
+          ip,
+          userAgent || null,
+          'unknown',
+          { reason: 'missing_signature' }
+        );
+      }
       return false;
     }
 
     try {
-      return verifyHmac(payload, signature, INTEL_ACADEMY_WEBHOOK_SECRET);
+      const isValid = verifyHmac(payload, signature, INTEL_ACADEMY_WEBHOOK_SECRET);
+      
+      if (!isValid && ip) {
+        // Log failed signature verification
+        await SecurityEventService.logWebhookSignatureFailed(
+          ip,
+          userAgent || null,
+          'unknown',
+          { reason: 'invalid_signature' }
+        );
+      }
+      
+      return isValid;
     } catch (error) {
       console.error('Error verifying webhook signature:', error);
+      
+      if (ip) {
+        await SecurityEventService.logWebhookSignatureFailed(
+          ip,
+          userAgent || null,
+          'unknown',
+          { reason: 'verification_error', error: (error as Error).message }
+        );
+      }
+      
       return false;
     }
   }
