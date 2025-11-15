@@ -545,3 +545,74 @@ model PushSubscription {
 
   @@index([userId, isActive])
 }
+
+model IntelAcademyIntegration {
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  intelAcademyUserId    String?   @unique
+  accessToken           String?
+  refreshToken          String?
+  tokenExpiry           DateTime?
+  lastSyncAt            DateTime?
+  syncStatus            String    @default("pending")
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([intelAcademyUserId])
+}
+
+model IntelAcademyCourse {
+  id                    String    @id @default(uuid())
+  userId                String
+  courseId              String
+  courseName            String
+  courseDescription     String?
+  thumbnailUrl          String?
+  enrollmentDate        DateTime?
+  completionDate        DateTime?
+  progress              Int       @default(0)
+  status                String    @default("not_started")
+  lastAccessedAt        DateTime?
+  metadata              Json?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([userId, status])
+}
+
+model IntelAcademyAchievement {
+  id                    String    @id @default(uuid())
+  userId                String
+  achievementId         String
+  achievementName       String
+  achievementType       String
+  description           String?
+  badgeUrl              String?
+  earnedAt              DateTime
+  metadata              Json?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([userId, achievementId])
+  @@index([userId, earnedAt])
+}
+
+model WebhookEvent {
+  id                    String    @id @default(uuid())
+  source                String
+  eventType             String
+  payload               Json
+  signature             String?
+  status                String    @default("pending")
+  retryCount            Int       @default(0)
+  errorMessage          String?
+  processedAt           DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([source, status, createdAt])
+  @@index([status, retryCount])
+}

@@ -1,0 +1,177 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for better analysis
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: solosuccess-ai/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./solosuccess-ai
+        run: npm ci
+      
+      - name: Run ESLint with annotations
+        working-directory: ./solosuccess-ai
+        run: |
+          npm run lint -- --format json --output-file eslint-report.json || true
+          npm run lint
+      
+      - name: Check code formatting
+        working-directory: ./solosuccess-ai
+        run: npm run format:check
+      
+      - name: TypeScript strict check
+        working-directory: ./solosuccess-ai
+        run: npm run type-check
+      
+      - name: Check for console.log statements
+        working-directory: ./solosuccess-ai
+        run: |
+          if grep -r "console\.log" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next app lib components; then
+            echo "Found console.log statements. Please remove them before merging."
+            exit 1
+          fi
+        continue-on-error: true
+      
+      - name: Check for TODO comments
+        working-directory: ./solosuccess-ai
+        run: |
+          echo "Checking for TODO comments..."
+          grep -r "TODO" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next app lib components || echo "No TODOs found"
+        continue-on-error: true
+      
+      - name: Check bundle size
+        working-directory: ./solosuccess-ai
+        run: |
+          npm run build
+          echo "Checking bundle sizes..."
+          du -sh .next/static/* || true
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          NEXTAUTH_SECRET: dummy-secret-for-build
+          NEXTAUTH_URL: http://localhost:3000
+      
+      - name: Upload ESLint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report
+          path: solosuccess-ai/eslint-report.json
+          retention-days: 7
+
+  complexity-analysis:
+    name: Code Complexity Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      
+      - name: Install complexity reporter
+        run: npm install -g complexity-report
+      
+      - name: Run complexity analysis
+        working-directory: ./solosuccess-ai
+        run: |
+          echo "Analyzing code complexity..."
+          find app lib components -name "*.ts" -o -name "*.tsx" | \
+            xargs cr --format json > complexity-report.json || true
+        continue-on-error: true
+      
+      - name: Upload complexity report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: complexity-report
+          path: solosuccess-ai/complexity-report.json
+          retention-days: 7
+
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: solosuccess-ai/package-lock.json
+      
+      - name: Run npm audit
+        working-directory: ./solosuccess-ai
+        run: |
+          npm audit --audit-level=moderate --json > audit-report.json || true
+          npm audit --audit-level=moderate
+        continue-on-error: true
+      
+      - name: Check for known vulnerabilities
+        working-directory: ./solosuccess-ai
+        run: |
+          if [ -f audit-report.json ]; then
+            vulnerabilities=$(jq '.metadata.vulnerabilities.total' audit-report.json)
+            if [ "$vulnerabilities" -gt 0 ]; then
+              echo "Found $vulnerabilities vulnerabilities"
+              echo "Please review and fix security issues"
+            fi
+          fi
+        continue-on-error: true
+      
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: solosuccess-ai/audit-report.json
+          retention-days: 30
+
+  pr-size-check:
+    name: PR Size Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Check PR size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const total = additions + deletions;
+            
+            console.log(`PR size: +${additions} -${deletions} (${total} total)`);
+            
+            if (total > 1000) {
+              core.warning(`This PR is quite large (${total} lines changed). Consider breaking it into smaller PRs for easier review.`);
+            }
+            
+            if (total > 2000) {
+              core.setFailed(`This PR is too large (${total} lines changed). Please break it into smaller PRs.`);
+            }

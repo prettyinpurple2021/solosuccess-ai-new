@@ -3,6 +3,7 @@ import { registerSchema } from '@/lib/auth/validation';
 import { hashPassword } from '@/lib/auth/password';
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth/jwt';
 import { prisma } from '@/lib/prisma';
+import { createStripeCustomer } from '@/lib/stripe/subscription';
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,6 +63,12 @@ export async function POST(request: NextRequest) {
         emailVerified: true,
         createdAt: true,
       },
+    });
+
+    // Create Stripe customer asynchronously (don't block registration)
+    createStripeCustomer(user.id, user.email).catch((error) => {
+      console.error('Failed to create Stripe customer:', error);
+      // Continue with registration even if Stripe customer creation fails
     });
 
     // Generate tokens

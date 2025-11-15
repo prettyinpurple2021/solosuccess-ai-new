@@ -1,0 +1,409 @@
+{
+  "dashboards": [
+    {
+      "name": "SoloSuccess AI - Production Overview",
+      "description": "High-level overview of system health and performance",
+      "widgets": [
+        {
+          "type": "timeseries",
+          "title": "API Response Time (p95)",
+          "metrics": [
+            {
+              "metric": "solosuccess.api.response_time",
+              "aggregation": "p95",
+              "tags": ["env:production"]
+            }
+          ],
+          "thresholds": {
+            "warning": 1000,
+            "critical": 3000
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Error Rate",
+          "metrics": [
+            {
+              "metric": "solosuccess.error.count",
+              "aggregation": "sum",
+              "tags": ["env:production"]
+            }
+          ],
+          "thresholds": {
+            "warning": 10,
+            "critical": 50
+          }
+        },
+        {
+          "type": "query_value",
+          "title": "Active Users",
+          "metrics": [
+            {
+              "metric": "solosuccess.users.active",
+              "aggregation": "last",
+              "tags": ["env:production"]
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Database Query Time",
+          "metrics": [
+            {
+              "metric": "solosuccess.database.query_time",
+              "aggregation": "avg",
+              "tags": ["env:production"]
+            }
+          ],
+          "thresholds": {
+            "warning": 100,
+            "critical": 500
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "AI Service Response Time",
+          "metrics": [
+            {
+              "metric": "solosuccess.ai.response_time",
+              "aggregation": "avg",
+              "tags": ["env:production"],
+              "groupBy": ["agent_id"]
+            }
+          ],
+          "thresholds": {
+            "warning": 5000,
+            "critical": 10000
+          }
+        },
+        {
+          "type": "query_value",
+          "title": "Cache Hit Rate",
+          "metrics": [
+            {
+              "metric": "solosuccess.cache.hit",
+              "aggregation": "sum",
+              "formula": "cache_hit / (cache_hit + cache_miss) * 100"
+            }
+          ],
+          "thresholds": {
+            "warning": 70,
+            "critical": 50
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Memory Usage",
+          "metrics": [
+            {
+              "metric": "solosuccess.system.memory_usage",
+              "aggregation": "avg",
+              "tags": ["env:production"]
+            }
+          ],
+          "thresholds": {
+            "warning": 80,
+            "critical": 90
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "CPU Usage",
+          "metrics": [
+            {
+              "metric": "solosuccess.system.cpu_usage",
+              "aggregation": "avg",
+              "tags": ["env:production"]
+            }
+          ],
+          "thresholds": {
+            "warning": 70,
+            "critical": 85
+          }
+        }
+      ]
+    },
+    {
+      "name": "SoloSuccess AI - Business Metrics",
+      "description": "Key business and user engagement metrics",
+      "widgets": [
+        {
+          "type": "query_value",
+          "title": "New User Registrations (24h)",
+          "metrics": [
+            {
+              "metric": "solosuccess.user.registration",
+              "aggregation": "sum",
+              "timeframe": "24h",
+              "tags": ["env:production"]
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "User Logins by Method",
+          "metrics": [
+            {
+              "metric": "solosuccess.user.login",
+              "aggregation": "sum",
+              "tags": ["env:production"],
+              "groupBy": ["method"]
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "AI Requests by Agent",
+          "metrics": [
+            {
+              "metric": "solosuccess.ai.request",
+              "aggregation": "sum",
+              "tags": ["env:production"],
+              "groupBy": ["agent_id"]
+            }
+          ]
+        },
+        {
+          "type": "query_value",
+          "title": "Mission Control Sessions (24h)",
+          "metrics": [
+            {
+              "metric": "solosuccess.mission_control.session",
+              "aggregation": "sum",
+              "timeframe": "24h",
+              "tags": ["env:production"]
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Subscription Changes",
+          "metrics": [
+            {
+              "metric": "solosuccess.subscription.change",
+              "aggregation": "sum",
+              "tags": ["env:production"],
+              "groupBy": ["to_tier"]
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Payment Success vs Failure",
+          "metrics": [
+            {
+              "metric": "solosuccess.payment.success",
+              "aggregation": "sum",
+              "tags": ["env:production"]
+            },
+            {
+              "metric": "solosuccess.payment.failure",
+              "aggregation": "sum",
+              "tags": ["env:production"]
+            }
+          ]
+        },
+        {
+          "type": "query_value",
+          "title": "Total Revenue (24h)",
+          "metrics": [
+            {
+              "metric": "solosuccess.payment.amount",
+              "aggregation": "sum",
+              "timeframe": "24h",
+              "tags": ["env:production", "currency:usd"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SoloSuccess AI - Infrastructure",
+      "description": "Infrastructure and service health metrics",
+      "widgets": [
+        {
+          "type": "timeseries",
+          "title": "ECS Task Count",
+          "metrics": [
+            {
+              "metric": "aws.ecs.service.running",
+              "aggregation": "avg",
+              "tags": ["cluster:solosuccess-production"]
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "RDS CPU Utilization",
+          "metrics": [
+            {
+              "metric": "aws.rds.cpuutilization",
+              "aggregation": "avg",
+              "tags": ["dbinstanceidentifier:production-solosuccess-db"]
+            }
+          ],
+          "thresholds": {
+            "warning": 70,
+            "critical": 85
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "RDS Database Connections",
+          "metrics": [
+            {
+              "metric": "aws.rds.database_connections",
+              "aggregation": "avg",
+              "tags": ["dbinstanceidentifier:production-solosuccess-db"]
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "ElastiCache Hit Rate",
+          "metrics": [
+            {
+              "metric": "aws.elasticache.cache_hit_rate",
+              "aggregation": "avg",
+              "tags": ["cacheclusterid:production-redis"]
+            }
+          ],
+          "thresholds": {
+            "warning": 70,
+            "critical": 50
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "ALB Request Count",
+          "metrics": [
+            {
+              "metric": "aws.applicationelb.request_count",
+              "aggregation": "sum",
+              "tags": ["loadbalancer:production-alb"]
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "ALB Target Response Time",
+          "metrics": [
+            {
+              "metric": "aws.applicationelb.target_response_time",
+              "aggregation": "avg",
+              "tags": ["loadbalancer:production-alb"]
+            }
+          ],
+          "thresholds": {
+            "warning": 1000,
+            "critical": 3000
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "S3 Bucket Size",
+          "metrics": [
+            {
+              "metric": "aws.s3.bucket_size_bytes",
+              "aggregation": "last",
+              "tags": ["bucketname:solosuccess-production-storage"]
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "CloudFront Requests",
+          "metrics": [
+            {
+              "metric": "aws.cloudfront.requests",
+              "aggregation": "sum",
+              "tags": ["distributionid:production-distribution"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "alerts": [
+    {
+      "name": "High API Response Time",
+      "metric": "solosuccess.api.response_time",
+      "aggregation": "p95",
+      "threshold": 3000,
+      "comparison": "above",
+      "timeframe": "5m",
+      "severity": "warning",
+      "notification_channels": ["slack", "pagerduty"]
+    },
+    {
+      "name": "Critical Error Rate",
+      "metric": "solosuccess.error.count",
+      "aggregation": "sum",
+      "threshold": 50,
+      "comparison": "above",
+      "timeframe": "5m",
+      "severity": "critical",
+      "notification_channels": ["slack", "pagerduty", "email"]
+    },
+    {
+      "name": "Database Connection Pool Exhausted",
+      "metric": "aws.rds.database_connections",
+      "aggregation": "avg",
+      "threshold": 90,
+      "comparison": "above",
+      "timeframe": "5m",
+      "severity": "critical",
+      "notification_channels": ["slack", "pagerduty"]
+    },
+    {
+      "name": "Low Cache Hit Rate",
+      "metric": "solosuccess.cache.hit",
+      "aggregation": "avg",
+      "threshold": 50,
+      "comparison": "below",
+      "timeframe": "15m",
+      "severity": "warning",
+      "notification_channels": ["slack"]
+    },
+    {
+      "name": "High Memory Usage",
+      "metric": "solosuccess.system.memory_usage",
+      "aggregation": "avg",
+      "threshold": 90,
+      "comparison": "above",
+      "timeframe": "10m",
+      "severity": "warning",
+      "notification_channels": ["slack"]
+    },
+    {
+      "name": "Payment Failure Spike",
+      "metric": "solosuccess.payment.failure",
+      "aggregation": "sum",
+      "threshold": 10,
+      "comparison": "above",
+      "timeframe": "15m",
+      "severity": "critical",
+      "notification_channels": ["slack", "pagerduty", "email"]
+    },
+    {
+      "name": "AI Service Timeout",
+      "metric": "solosuccess.ai.response_time",
+      "aggregation": "p95",
+      "threshold": 30000,
+      "comparison": "above",
+      "timeframe": "5m",
+      "severity": "critical",
+      "notification_channels": ["slack", "pagerduty"]
+    },
+    {
+      "name": "ECS Task Failure",
+      "metric": "aws.ecs.service.running",
+      "aggregation": "avg",
+      "threshold": 1,
+      "comparison": "below",
+      "timeframe": "5m",
+      "severity": "critical",
+      "notification_channels": ["slack", "pagerduty", "email"]
+    }
+  ]
+}
