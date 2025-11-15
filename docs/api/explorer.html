@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoloSuccess AI - API Explorer</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        
+        .header p {
+            margin: 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .info-banner {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 1rem 1.5rem;
+            margin: 2rem;
+            border-radius: 8px;
+        }
+        
+        .info-banner h3 {
+            margin: 0 0 0.5rem 0;
+            color: #667eea;
+        }
+        
+        .info-banner p {
+            margin: 0;
+            color: #4a5568;
+        }
+        
+        #swagger-ui {
+            padding: 0 2rem 2rem 2rem;
+        }
+        
+        /* Custom Swagger UI styling */
+        .swagger-ui .topbar {
+            display: none;
+        }
+        
+        .swagger-ui .info {
+            margin: 2rem 0;
+        }
+        
+        .swagger-ui .scheme-container {
+            background: #f7fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 SoloSuccess AI API Explorer</h1>
+        <p>Interactive documentation and testing for the SoloSuccess AI API</p>
+    </div>
+    
+    <div class="container">
+        <div class="info-banner">
+            <h3>🔑 Authentication Required</h3>
+            <p>
+                Most endpoints require authentication. Click the "Authorize" button below and enter your JWT token 
+                to test authenticated endpoints. You can obtain a token by calling the <code>/auth/login</code> endpoint.
+            </p>
+        </div>
+        
+        <div id="swagger-ui"></div>
+    </div>
+    
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: './openapi.yaml',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "BaseLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 1,
+                docExpansion: 'list',
+                filter: true,
+                tryItOutEnabled: true,
+                persistAuthorization: true
+            });
+            
+            window.ui = ui;
+        };
+    </script>
+</body>
+</html>

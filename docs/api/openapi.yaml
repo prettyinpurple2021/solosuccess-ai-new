@@ -1,0 +1,559 @@
+openapi: 3.0.3
+info:
+  title: SoloSuccess AI API
+  description: |
+    The SoloSuccess AI API provides programmatic access to all platform features including 
+    AI agent interactions, Mission Control sessions, competitive intelligence, and business analytics.
+    
+    ## Authentication
+    All API requests require authentication using JWT tokens in the Authorization header:
+    ```
+    Authorization: Bearer <your_jwt_token>
+    ```
+    
+    ## Rate Limiting
+    - Free Tier: 100 requests per 15 minutes
+    - Accelerator Tier: 500 requests per 15 minutes  
+    - Premium Tier: 2000 requests per 15 minutes
+    
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api-support@solosuccess.ai
+    url: https://docs.solosuccess.ai
+  license:
+    name: Proprietary
+    url: https://solosuccess.ai/terms
+
+servers:
+  - url: https://api.solosuccess.ai/v1
+    description: Production server
+  - url: https://staging-api.solosuccess.ai/v1
+    description: Staging server
+  - url: http://localhost:3000/api
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Users
+    description: User profile and account management
+  - name: AI Agents
+    description: AI agent interactions and conversations
+  - name: Mission Control
+    description: Multi-agent collaboration sessions
+  - name: Competitors
+    description: Competitive intelligence tracking
+  - name: Content
+    description: AI-powered content generation
+  - name: Documents
+    description: Business document generation
+  - name: Analytics
+    description: Business metrics and insights
+  - name: Subscriptions
+    description: Subscription and billing management
+  - name: Notifications
+    description: Notification preferences and delivery
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: INVALID_INPUT
+            message:
+              type: string
+              example: Email is required
+            details:
+              type: object
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    Meta:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: '2025-11-15T10:30:00Z'
+        requestId:
+          type: string
+          example: req_abc123
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: usr_123abc
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        subscriptionTier:
+          type: string
+          enum: [free, accelerator, premium]
+          example: premium
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+          example: roxy
+        name:
+          type: string
+          example: Roxy
+        title:
+          type: string
+          example: Strategic Operator
+        description:
+          type: string
+        personality:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        avatarUrl:
+          type: string
+          format: uri
+        available:
+          type: boolean
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          example: msg_xyz789
+        conversationId:
+          type: string
+          example: conv_abc123
+        agentId:
+          type: string
+          example: roxy
+        role:
+          type: string
+          enum: [user, agent]
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+
+    MissionControlSession:
+      type: object
+      properties:
+        id:
+          type: string
+          example: mc_abc123
+        objective:
+          type: string
+        status:
+          type: string
+          enum: [in_progress, completed, failed]
+        agentsInvolved:
+          type: array
+          items:
+            type: string
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        results:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Create a new user account
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: SecurePassword123
+                firstName:
+                  type: string
+                  example: John
+                lastName:
+                  type: string
+                  example: Doe
+                businessName:
+                  type: string
+                  example: Acme Inc
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+                      refreshToken:
+                        type: string
+                      expiresIn:
+                        type: integer
+                        example: 86400
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate and receive access token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                mfaCode:
+                  type: string
+                  pattern: '^\d{6}$'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+                      refreshToken:
+                        type: string
+                      expiresIn:
+                        type: integer
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /agents:
+    get:
+      tags:
+        - AI Agents
+      summary: List all agents
+      description: Get all available AI agents
+      operationId: listAgents
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      agents:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Agent'
+
+  /agents/{agentId}/chat:
+    post:
+      tags:
+        - AI Agents
+      summary: Send message to agent
+      description: Send a message to an AI agent and receive a response
+      operationId: sendMessage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: roxy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+                conversationId:
+                  type: string
+                context:
+                  type: object
+      responses:
+        '200':
+          description: Agent response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        $ref: '#/components/schemas/Message'
+                      conversationId:
+                        type: string
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /mission-control:
+    post:
+      tags:
+        - Mission Control
+      summary: Create Mission Control session
+      description: Initiate a new Mission Control session
+      operationId: createMissionControl
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - objective
+              properties:
+                objective:
+                  type: string
+                  minLength: 10
+                  maxLength: 1000
+                context:
+                  type: object
+                priority:
+                  type: string
+                  enum: [low, medium, high]
+                  default: medium
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/MissionControlSession'
+        '402':
+          description: Premium subscription required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Mission Control
+      summary: List Mission Control sessions
+      description: Get all Mission Control sessions
+      operationId: listMissionControl
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [in_progress, completed, failed]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      sessions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/MissionControlSession'
+                      pagination:
+                        type: object
+
+  /mission-control/{sessionId}:
+    get:
+      tags:
+        - Mission Control
+      summary: Get Mission Control session
+      description: Get session status and results
+      operationId: getMissionControl
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/MissionControlSession'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+security:
+  - BearerAuth: []
