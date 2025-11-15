@@ -1,14 +1,20 @@
 import { prisma } from '@/lib/prisma';
 import { IntelAcademyService } from './intel-academy.service';
 
+export interface SyncResult {
+  userId: string;
+  success: boolean;
+  error?: string;
+}
+
 /**
  * Service to handle subscription tier synchronization across platforms
  */
 export class SubscriptionSyncService {
   /**
-   * Map SoloSuccess AI subscription tiers to Intel Academy tiers
+   * Map SoloSuccess AI subscription tiers to Intel Academy access levels
    */
-  private static mapSubscriptionTier(tier: string): string {
+  static mapTierToAccessLevel(tier: string): string {
     const tierMapping: Record<string, string> = {
       free: 'basic',
       accelerator: 'premium',
@@ -19,7 +25,34 @@ export class SubscriptionSyncService {
   }
 
   /**
-   * Sync subscription tier change with Intel Academy
+   * Retry with exponential backoff
+   */
+  private static async retryWithExponentialBackoff<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 1000
+  ): Promise<T> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error as Error;
+        
+        if (attempt < maxRetries - 1) {
+          const delay = baseDelay * Math.pow(2, attempt);
+          console.log(`Retry attempt ${attempt + 1} after ${delay}ms`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw lastError || new Error('Max retries exceeded');
+  }
+
+  /**
+   * Sync subscription tier change with Intel Academy with exponential backoff retry
    */
   static async syncSubscriptionChange(
     userId: string,
@@ -36,10 +69,12 @@ export class SubscriptionSyncService {
       }
 
       // Map tier to Intel Academy format
-      const mappedTier = this.mapSubscriptionTier(newTier);
+      const mappedTier = this.mapTierToAccessLevel(newTier);
 
-      // Sync with Intel Academy
-      await IntelAcademyService.syncSubscriptionTier(userId, mappedTier);
+      // Sync with Intel Academy with retry logic
+      await this.retryWithExponentialBackoff(async () => {
+        await IntelAcademyService.syncSubscriptionTier(userId, mappedTier);
+      }, 3, 1000);
 
       // Create notification for user
       await prisma.notification.create({
@@ -74,27 +109,30 @@ export class SubscriptionSyncService {
   }
 
   /**
-   * Provision access for new subscription
+   * Provision access for new subscription with Intel Academy API
    */
   static async provisionAccess(userId: string, tier: string): Promise<void> {
     try {
       const integration = await IntelAcademyService.getIntegration(userId);
 
       if (!integration || !integration.isActive) {
+        console.log(`Intel Academy not connected for user ${userId}, skipping provision`);
         return;
       }
 
-      const mappedTier = this.mapSubscriptionTier(tier);
+      const mappedTier = this.mapTierToAccessLevel(tier);
 
-      // Sync tier
-      await IntelAcademyService.syncSubscriptionTier(userId, mappedTier);
+      // Sync tier with retry logic
+      await this.retryWithExponentialBackoff(async () => {
+        await IntelAcademyService.syncSubscriptionTier(userId, mappedTier);
+      }, 3, 1000);
 
       // Update integration status
       await prisma.intelAcademyIntegration.update({
         where: { userId },
         data: {
           lastSyncAt: new Date(),
-          syncStatus: 'active',
+          syncStatus: 'synced',
         },
       });
 
@@ -113,11 +151,14 @@ export class SubscriptionSyncService {
       const integration = await IntelAcademyService.getIntegration(userId);
 
       if (!integration || !integration.isActive) {
+        console.log(`Intel Academy not connected for user ${userId}, skipping cancellation`);
         return;
       }
 
-      // Downgrade to free tier
-      await IntelAcademyService.syncSubscriptionTier(userId, 'basic');
+      // Downgrade to free tier (basic access level)
+      await this.retryWithExponentialBackoff(async () => {
+        await IntelAcademyService.syncSubscriptionTier(userId, 'basic');
+      }, 3, 1000);
 
       // Create notification
       await prisma.notification.create({
@@ -134,6 +175,7 @@ export class SubscriptionSyncService {
       console.log(`Handled subscription cancellation for user ${userId}`);
     } catch (error) {
       console.error('Error handling subscription cancellation:', error);
+      // Don't throw - cancellation should succeed even if sync fails
     }
   }
 
@@ -141,37 +183,59 @@ export class SubscriptionSyncService {
    * Sync all users with active Intel Academy integrations
    * Used for batch sync operations
    */
-  static async syncAllUsers(): Promise<void> {
+  static async syncAllUsers(): Promise<SyncResult[]> {
     try {
       const integrations = await prisma.intelAcademyIntegration.findMany({
         where: {
           isActive: true,
         },
-        include: {
-          user: {
-            select: {
-              id: true,
-              subscriptionTier: true,
-            },
-          },
+        select: {
+          userId: true,
         },
       });
 
-      console.log(`Syncing ${integrations.length} Intel Academy integrations`);
+      console.log(`Starting batch sync for ${integrations.length} Intel Academy integrations`);
 
       const results = await Promise.allSettled(
         integrations.map(async (integration) => {
-          const user = integration.user as { id: string; subscriptionTier: string };
-          const mappedTier = this.mapSubscriptionTier(user.subscriptionTier);
+          const user = await prisma.user.findUnique({
+            where: { id: integration.userId },
+            select: { id: true, subscriptionTier: true },
+          });
+
+          if (!user) {
+            throw new Error(`User ${integration.userId} not found`);
+          }
+
+          const mappedTier = this.mapTierToAccessLevel(user.subscriptionTier);
           
-          await IntelAcademyService.syncSubscriptionTier(user.id, mappedTier);
+          // Use retry logic for each user sync
+          await this.retryWithExponentialBackoff(async () => {
+            await IntelAcademyService.syncSubscriptionTier(user.id, mappedTier);
+          }, 3, 1000);
+
+          return { userId: user.id, success: true };
         })
       );
 
-      const successful = results.filter((r) => r.status === 'fulfilled').length;
-      const failed = results.filter((r) => r.status === 'rejected').length;
+      const syncResults: SyncResult[] = results.map((result, index) => {
+        if (result.status === 'fulfilled') {
+          return result.value;
+        } else {
+          return {
+            userId: integrations[index].userId,
+            success: false,
+            error: result.reason?.message || 'Unknown error',
+          };
+        }
+      });
 
-      console.log(`Sync complete: ${successful} successful, ${failed} failed`);
+      const successful = syncResults.filter((r) => r.success).length;
+      const failed = syncResults.filter((r) => !r.success).length;
+
+      console.log(`Batch sync complete: ${successful} successful, ${failed} failed`);
+
+      return syncResults;
     } catch (error) {
       console.error('Error syncing all users:', error);
       throw error;

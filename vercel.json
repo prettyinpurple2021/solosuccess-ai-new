@@ -16,7 +16,15 @@
     "SENDGRID_API_KEY": "@sendgrid-api-key",
     "AWS_ACCESS_KEY_ID": "@aws-access-key-id",
     "AWS_SECRET_ACCESS_KEY": "@aws-secret-access-key",
-    "SENTRY_DSN": "@sentry-dsn"
+    "SENTRY_DSN": "@sentry-dsn",
+    "INTEL_ACADEMY_API_URL": "@intel-academy-api-url",
+    "INTEL_ACADEMY_CLIENT_ID": "@intel-academy-client-id",
+    "INTEL_ACADEMY_CLIENT_SECRET": "@intel-academy-client-secret",
+    "INTEL_ACADEMY_REDIRECT_URI": "@intel-academy-redirect-uri",
+    "INTEL_ACADEMY_WEBHOOK_SECRET": "@intel-academy-webhook-secret",
+    "JWT_SECRET": "@jwt-secret",
+    "CRON_SECRET": "@cron-secret",
+    "ENCRYPTION_KEY": "@encryption-key"
   },
   "build": {
     "env": {
@@ -71,6 +79,18 @@
     {
       "path": "/api/cron/competitor-scan",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/process-webhooks",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/sync-intel-academy",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-webhooks",
+      "schedule": "0 3 * * *"
     }
   ]
 }
