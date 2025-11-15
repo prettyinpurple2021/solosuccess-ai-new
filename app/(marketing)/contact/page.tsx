@@ -192,7 +192,7 @@ export default function ContactPage() {
               </p>
               <Button
                 variant="outline"
-                onClick={() => window.location.href = '/docs/user-guide/faq'}
+                onClick={() => window.location.href = '/faq'}
               >
                 View FAQ
               </Button>
