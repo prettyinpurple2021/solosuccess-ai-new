@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { SignJWT, jwtVerify } from 'jose';
 import { encrypt, decrypt } from '@/lib/security/encryption';
 import { generateSecureRandomString } from '@/lib/security/encryption';
+import { notificationService } from './notification-service';
 
 const INTEL_ACADEMY_API_URL = process.env.INTEL_ACADEMY_API_URL || 'https://api.intelacademy.com';
 const INTEL_ACADEMY_CLIENT_ID = process.env.INTEL_ACADEMY_CLIENT_ID || '';
@@ -306,6 +307,15 @@ export class IntelAcademyService {
           syncStatus: 'failed',
         },
       });
+      
+      // Send notification about expired connection (non-blocking)
+      notificationService.notifyIntelAcademyDisconnected(
+        userId,
+        'Your Intel Academy connection has expired. Please reconnect to continue syncing your learning progress.'
+      ).catch((error) => {
+        console.error('Error sending Intel Academy expiration notification:', error);
+      });
+      
       throw error;
     }
   }

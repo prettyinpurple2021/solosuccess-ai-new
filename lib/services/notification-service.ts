@@ -11,9 +11,15 @@ export type NotificationType =
   | 'competitor_alert'
   | 'insight_nudge'
   | 'subscription_change'
+  | 'subscription_sync'
+  | 'subscription_sync_error'
   | 'security_alert'
   | 'document_ready'
   | 'content_generated'
+  | 'intel_academy_connected'
+  | 'intel_academy_disconnected'
+  | 'intel_academy_achievement'
+  | 'intel_academy_course_complete'
   | 'system';
 
 export type NotificationCategory =
@@ -25,6 +31,8 @@ export type NotificationCategory =
   | 'security'
   | 'documents'
   | 'content'
+  | 'integration'
+  | 'learning'
   | 'system';
 
 export type NotificationPriority = 'low' | 'medium' | 'high' | 'critical';
@@ -343,6 +351,64 @@ class NotificationService {
       actionUrl: `/content-generation/library`,
       priority: 'medium',
       data: { contentId },
+    });
+  }
+
+  async notifyIntelAcademyConnected(userId: string) {
+    return this.createNotification({
+      userId,
+      type: 'intel_academy_connected',
+      category: 'integration',
+      title: 'Intel Academy Connected',
+      message: 'Your Intel Academy account has been successfully connected',
+      actionUrl: '/dashboard',
+      priority: 'medium',
+    });
+  }
+
+  async notifyIntelAcademyDisconnected(userId: string, reason?: string) {
+    return this.createNotification({
+      userId,
+      type: 'intel_academy_disconnected',
+      category: 'integration',
+      title: 'Intel Academy Disconnected',
+      message: reason || 'Your Intel Academy connection has been disconnected',
+      actionUrl: '/dashboard',
+      priority: 'high',
+    });
+  }
+
+  async notifyIntelAcademyAchievement(
+    userId: string,
+    achievementName: string,
+    achievementId: string
+  ) {
+    return this.createNotification({
+      userId,
+      type: 'intel_academy_achievement',
+      category: 'learning',
+      title: 'Achievement Earned! 🏆',
+      message: `Congratulations! You earned "${achievementName}" in Intel Academy`,
+      actionUrl: '/dashboard',
+      priority: 'medium',
+      data: { achievementId },
+    });
+  }
+
+  async notifyIntelAcademyCourseComplete(
+    userId: string,
+    courseName: string,
+    courseId: string
+  ) {
+    return this.createNotification({
+      userId,
+      type: 'intel_academy_course_complete',
+      category: 'learning',
+      title: 'Course Completed! 🎓',
+      message: `Congratulations! You completed "${courseName}"`,
+      actionUrl: '/dashboard',
+      priority: 'medium',
+      data: { courseId },
     });
   }
 }

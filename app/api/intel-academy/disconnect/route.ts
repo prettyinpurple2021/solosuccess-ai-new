@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { IntelAcademyService } from '@/lib/services/intel-academy.service';
+import { notificationService } from '@/lib/services/notification-service';
 
 /**
  * POST /api/intel-academy/disconnect
@@ -18,6 +19,14 @@ export async function POST(request: NextRequest) {
     }
 
     await IntelAcademyService.disconnectIntegration(session.user.id);
+
+    // Send notification (non-blocking)
+    notificationService.notifyIntelAcademyDisconnected(
+      session.user.id,
+      'You manually disconnected your Intel Academy integration'
+    ).catch((error) => {
+      console.error('Error sending Intel Academy disconnection notification:', error);
+    });
 
     return NextResponse.json({
       success: true,

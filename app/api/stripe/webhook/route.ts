@@ -4,6 +4,8 @@ import {
   syncSubscriptionToDatabase,
   handleSubscriptionDeletion,
 } from '@/lib/stripe/subscription';
+import { SubscriptionSyncService } from '@/lib/services/subscription-sync.service';
+import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
@@ -61,6 +63,26 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         console.log('Subscription updated:', subscription.id);
         await syncSubscriptionToDatabase(subscription);
+        
+        // Sync with Intel Academy (non-blocking)
+        try {
+          const user = await prisma.user.findFirst({
+            where: { stripeCustomerId: subscription.customer as string },
+            select: { id: true, subscriptionTier: true },
+          });
+          
+          if (user) {
+            // Run sync in background without blocking webhook response
+            SubscriptionSyncService.syncSubscriptionChange(
+              user.id,
+              user.subscriptionTier
+            ).catch((error) => {
+              console.error('Intel Academy sync failed (non-blocking):', error);
+            });
+          }
+        } catch (error) {
+          console.error('Error finding user for Intel Academy sync:', error);
+        }
         break;
       }
 
@@ -68,6 +90,23 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         console.log('Subscription deleted:', subscription.id);
         await handleSubscriptionDeletion(subscription.id);
+        
+        // Sync cancellation with Intel Academy (non-blocking)
+        try {
+          const user = await prisma.user.findFirst({
+            where: { stripeCustomerId: subscription.customer as string },
+            select: { id: true },
+          });
+          
+          if (user) {
+            // Run sync in background without blocking webhook response
+            SubscriptionSyncService.handleCancellation(user.id).catch((error) => {
+              console.error('Intel Academy cancellation sync failed (non-blocking):', error);
+            });
+          }
+        } catch (error) {
+          console.error('Error finding user for Intel Academy cancellation sync:', error);
+        }
         break;
       }
 

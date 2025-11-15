@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { IntelAcademyService } from '@/lib/services/intel-academy.service';
+import { notificationService } from '@/lib/services/notification-service';
 import { prisma } from '@/lib/prisma';
 
 /**
@@ -69,6 +70,11 @@ export async function GET(request: NextRequest) {
         user.subscriptionTier
       );
     }
+
+    // Send notification (non-blocking)
+    notificationService.notifyIntelAcademyConnected(session.user.id).catch((error) => {
+      console.error('Error sending Intel Academy connection notification:', error);
+    });
 
     // Redirect to dashboard with success message
     return NextResponse.redirect(

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { verifyHmac } from '@/lib/security/encryption';
+import { notificationService } from './notification-service';
 
 const INTEL_ACADEMY_WEBHOOK_SECRET = process.env.INTEL_ACADEMY_WEBHOOK_SECRET || '';
 
@@ -242,16 +243,11 @@ export class WebhookService {
     });
 
     if (course) {
-      await prisma.notification.create({
-        data: {
-          userId,
-          type: 'course_completed',
-          category: 'integration',
-          title: 'Course Completed!',
-          message: `Congratulations! You've completed ${course.courseName}.`,
-          priority: 'medium',
-        },
-      });
+      await notificationService.notifyIntelAcademyCourseComplete(
+        userId,
+        course.courseName,
+        courseId
+      );
     }
 
     console.log(`Course completed: ${courseId} for user ${userId}`);
@@ -285,16 +281,11 @@ export class WebhookService {
     });
 
     // Send notification
-    await prisma.notification.create({
-      data: {
-        userId,
-        type: 'achievement_earned',
-        category: 'integration',
-        title: 'Achievement Unlocked!',
-        message: `You've earned the "${achievementName}" achievement!`,
-        priority: 'high',
-      },
-    });
+    await notificationService.notifyIntelAcademyAchievement(
+      userId,
+      achievementName,
+      achievementId
+    );
 
     console.log(`Achievement earned: ${achievementName} for user ${userId}`);
   }

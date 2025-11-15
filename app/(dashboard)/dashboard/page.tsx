@@ -7,6 +7,7 @@ import { MetricsOverview } from '@/components/dashboard/MetricsOverview';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { AgentStatusCards } from '@/components/dashboard/AgentStatusCards';
+import { IntelAcademyWidget } from '@/components/intel-academy/IntelAcademyWidget';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { dashboardApi, DashboardMetrics, RecentActivity as RecentActivityType, AgentStatus } from '@/lib/api/dashboard';
 
@@ -87,15 +88,8 @@ export default function DashboardPage() {
           {/* Recent Activity */}
           <RecentActivity activities={recentActivity} />
 
-          {/* Placeholder for future widgets */}
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">Insights</h2>
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center">
-              <p className="text-gray-400">
-                AI-powered insights coming soon
-              </p>
-            </div>
-          </div>
+          {/* Intel Academy Widget */}
+          <IntelAcademyWidget />
         </div>
 
         {/* AI Agent Status Cards */}
