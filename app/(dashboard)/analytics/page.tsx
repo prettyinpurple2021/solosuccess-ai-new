@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react';
 import { MetricCard } from '@/components/analytics/MetricCard';
 import { DateRangeSelector } from '@/components/analytics/DateRangeSelector';
 import { AnalyticsChart } from '@/components/analytics/AnalyticsChart';
+import { GlassmorphicChart } from '@/components/analytics/GlassmorphicChart';
 import { InsightNudgeCard } from '@/components/analytics/InsightNudgeCard';
+import { ExportButton } from '@/components/analytics/ExportButton';
+import { ShareButton } from '@/components/analytics/ShareButton';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
 import {
@@ -111,11 +114,24 @@ export default function AnalyticsPage() {
     <div className="min-h-screen p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold text-white mb-2">Analytics</h1>
-          <p className="text-gray-400">
-            Track your business metrics and insights
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">Analytics</h1>
+            <p className="text-gray-400">
+              Track your business metrics and insights
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <ExportButton
+              data={transformedChartData}
+              filename={`analytics-${dateRange.startDate}-to-${dateRange.endDate}`}
+              formats={['json', 'csv']}
+            />
+            <ShareButton
+              title="Analytics Dashboard"
+              description="Check out my business analytics"
+            />
+          </div>
         </div>
 
         {/* Date Range Selector */}
@@ -197,20 +213,23 @@ export default function AnalyticsPage() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {transformedChartData.some((d: any) => d.revenue > 0) && (
-            <AnalyticsChart
+            <GlassmorphicChart
               title="Revenue Over Time"
+              subtitle="Track your revenue growth"
               data={transformedChartData}
               dataKeys={[
                 { key: 'revenue', label: 'Revenue', color: '#10B981' },
               ]}
               type="area"
               height={300}
+              animated={true}
             />
           )}
 
           {transformedChartData.some((d: any) => d.users > 0) && (
-            <AnalyticsChart
+            <GlassmorphicChart
               title="Users & Sessions"
+              subtitle="Monitor user engagement"
               data={transformedChartData}
               dataKeys={[
                 { key: 'users', label: 'Users', color: '#3B82F6' },
@@ -218,6 +237,7 @@ export default function AnalyticsPage() {
               ]}
               type="line"
               height={300}
+              animated={true}
             />
           )}
         </div>
