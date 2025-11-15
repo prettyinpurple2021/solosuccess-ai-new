@@ -496,3 +496,52 @@ model InsightNudge {
   @@index([userId, actionTaken, dismissedAt])
   @@index([createdAt])
 }
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String
+  type        String
+  category    String
+  title       String
+  message     String
+  data        Json?
+  read        Boolean   @default(false)
+  readAt      DateTime?
+  actionUrl   String?
+  priority    String    @default("medium")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@index([category])
+}
+
+model NotificationPreference {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  emailEnabled      Boolean  @default(true)
+  pushEnabled       Boolean  @default(false)
+  inAppEnabled      Boolean  @default(true)
+  categories        Json     @default("{}")
+  digestEnabled     Boolean  @default(false)
+  digestFrequency   String   @default("daily")
+  digestTime        String   @default("09:00")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model PushSubscription {
+  id          String   @id @default(uuid())
+  userId      String
+  endpoint    String   @unique
+  keys        Json
+  userAgent   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, isActive])
+}
