@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { IntelAcademyService } from '@/lib/services/intel-academy.service';
+import { SubscriptionSyncService } from '@/lib/services/subscription-sync.service';
 import { prisma } from '@/lib/prisma';
 
 /**
  * POST /api/intel-academy/sync-subscription
- * Manually trigger subscription sync with Intel Academy
+ * Manually trigger subscription sync with Intel Academy using SubscriptionSyncService
  */
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check
     const session = await getServerSession();
 
     if (!session?.user?.id) {
@@ -41,16 +43,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sync subscription tier
-    await IntelAcademyService.syncSubscriptionTier(
+    // Call SubscriptionSyncService with retry logic
+    await SubscriptionSyncService.syncSubscriptionChange(
       session.user.id,
       user.subscriptionTier
     );
 
+    // Return sync result
     return NextResponse.json({
       success: true,
       message: 'Subscription synced successfully',
       subscriptionTier: user.subscriptionTier,
+      mappedTier: SubscriptionSyncService.mapTierToAccessLevel(user.subscriptionTier),
     });
   } catch (error) {
     console.error('Error syncing subscription:', error);

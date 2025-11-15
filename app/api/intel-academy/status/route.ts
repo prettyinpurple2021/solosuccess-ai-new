@@ -4,7 +4,7 @@ import { IntelAcademyService } from '@/lib/services/intel-academy.service';
 
 /**
  * GET /api/intel-academy/status
- * Get Intel Academy integration status
+ * Get Intel Academy integration status with token refresh
  */
 export async function GET(request: NextRequest) {
   try {
@@ -27,16 +27,29 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Ensure token is valid (will refresh if needed)
+    if (integration.isActive && integration.accessToken) {
+      try {
+        await IntelAcademyService.ensureValidToken(session.user.id);
+      } catch (error) {
+        console.error('Error refreshing token:', error);
+        // Token refresh failed, integration will be marked as inactive
+      }
+    }
+
+    // Fetch updated integration after potential token refresh
+    const updatedIntegration = await IntelAcademyService.getIntegration(session.user.id);
+
     return NextResponse.json({
       success: true,
-      connected: integration.isActive,
-      integration: {
-        id: integration.id,
-        intelAcademyUserId: integration.intelAcademyUserId,
-        lastSyncAt: integration.lastSyncAt,
-        syncStatus: integration.syncStatus,
-        isActive: integration.isActive,
-      },
+      connected: updatedIntegration?.isActive || false,
+      integration: updatedIntegration ? {
+        id: updatedIntegration.id,
+        intelAcademyUserId: updatedIntegration.intelAcademyUserId,
+        lastSyncAt: updatedIntegration.lastSyncAt,
+        syncStatus: updatedIntegration.syncStatus,
+        isActive: updatedIntegration.isActive,
+      } : null,
     });
   } catch (error) {
     console.error('Error getting Intel Academy status:', error);
