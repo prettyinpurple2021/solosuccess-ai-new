@@ -31,6 +31,31 @@ Sentry.init({
       delete event.extra.OPENAI_API_KEY;
       delete event.extra.STRIPE_SECRET_KEY;
       delete event.extra.JWT_SECRET;
+      delete event.extra.INTEL_ACADEMY_CLIENT_SECRET;
+      delete event.extra.INTEL_ACADEMY_WEBHOOK_SECRET;
+      delete event.extra.ENCRYPTION_KEY;
+      delete event.extra.CRON_SECRET;
+    }
+    
+    // Remove sensitive Intel Academy data
+    if (event.contexts) {
+      if (event.contexts.intel_academy) {
+        delete event.contexts.intel_academy.access_token;
+        delete event.contexts.intel_academy.refresh_token;
+      }
+    }
+    
+    // Filter sensitive data from breadcrumbs
+    if (event.breadcrumbs) {
+      event.breadcrumbs = event.breadcrumbs.map((breadcrumb) => {
+        if (breadcrumb.data) {
+          delete breadcrumb.data.access_token;
+          delete breadcrumb.data.refresh_token;
+          delete breadcrumb.data.token;
+          delete breadcrumb.data.signature;
+        }
+        return breadcrumb;
+      });
     }
     
     return event;

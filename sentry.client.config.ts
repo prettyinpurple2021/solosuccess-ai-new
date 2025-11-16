@@ -41,9 +41,20 @@ Sentry.init({
           delete breadcrumb.data.password;
           delete breadcrumb.data.token;
           delete breadcrumb.data.apiKey;
+          delete breadcrumb.data.access_token;
+          delete breadcrumb.data.refresh_token;
+          delete breadcrumb.data.signature;
         }
         return breadcrumb;
       });
+    }
+    
+    // Remove sensitive Intel Academy data
+    if (event.contexts) {
+      if (event.contexts.intel_academy) {
+        delete event.contexts.intel_academy.access_token;
+        delete event.contexts.intel_academy.refresh_token;
+      }
     }
     
     return event;
